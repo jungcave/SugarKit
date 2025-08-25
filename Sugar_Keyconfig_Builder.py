@@ -138,6 +138,13 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
                 k + ' alt', setKmiProps=lambda kmi: setTypeProp(kmi, v))
             add('3D View', {'view3d.view_axis': {'align_active': True}},
                 k + ' alt DOUBLE_CLICK repeat', setKmiProps=lambda kmi: setTypeProp(kmi, v))
+        for k, v in {
+            'ONE': 'LEFT',
+            'TWO': 'BACK',
+            'THREE': 'BOTTOM'
+        }.items():
+            add('3D View', 'view3d.view_axis',
+                'RIGHTMOUSE alt ' + k, setKmiProps=lambda kmi: setTypeProp(kmi, v))
 
         for k, v in {
             'FOUR': 'ORBITLEFT',
@@ -784,10 +791,6 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             'H DOUBLE_CLICK')
 
         # select
-        add('Outliner', {'outliner.item_activate': {'extend': True, 'deselect_all': True}},
-            'LEFTMOUSE shift CLICK', disableOld='LEFTMOUSE ctrl CLICK')
-        add('Outliner', {'outliner.item_activate': {'extend_range': True, 'deselect_all': True}},
-            'LEFTMOUSE ctrl CLICK', disableOldExactProps='LEFTMOUSE shift CLICK')
         add('Outliner', 'outliner.select_all',
             'A DOUBLE_CLICK', disableOld='A', setKmiProps=lambda kmi: setActionProp(kmi, 'SELECT'))
         add('Outliner', 'outliner.select_all',
@@ -1921,14 +1924,15 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             'MINUS', disableOld='J alt')
 
         # view
+        disable('Image', 'image.view_zoom_border', 'B shift')
         add('Image', {'image.view_all': {'fit_view': True}},
             'F DOUBLE_CLICK')
 
         # mode
         add('Image', {'wm.context_pie_enum': {'data_path': 'space_data.ui_mode'}},
             'TAB shift')
-        add('UV Editor', {'wm.call_menu_pie': {'name': 'IMAGE_MT_uvs_select_mode'}},
-            'TAB shift')
+        add('UV Editor', {'wm.call_menu': {'name': 'IMAGE_MT_uvs_select_mode'}},
+            'TAB shift', disableOld='TAB ctrl')
 
         # uv
         add('UV Editor', {'wm.context_toggle': {'data_path': 'scene.tool_settings.use_uv_select_sync'}},
@@ -1967,7 +1971,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
 
         # quick select
         add('UV Editor', 'uv.select_box',
-            'LEFTMOUSE shift CLICK_DRAG')
+            'LEFTMOUSE CLICK_DRAG')
         add('UV Editor', 'uv.select_box',
             'LEFTMOUSE shift CLICK_DRAG', setKmiProps=lambda kmi: setModeProp(kmi, 'ADD'))
         add('UV Editor', 'uv.select_box',
@@ -2171,7 +2175,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
         # bool tool {b}
         if "object_boolean_tools" in bpy.context.preferences.addons:
             editUserKeymapItem('Object Mode', {'wm.call_menu': {'name': 'VIEW3D_MT_booltool_menu'}},
-                               'B shift alt T', oldHotkey='B shift ctrl')
+                               'T shift alt B', oldHotkey='B shift ctrl')
             editUserKeymapItem('Object Mode', 'object.booltool_auto_difference',
                                'MINUS shift alt DOUBLE_CLICK', oldHotkey='NUMPAD_MINUS shift ctrl')
             editUserKeymapItem('Object Mode', 'object.booltool_auto_union',
@@ -2267,36 +2271,36 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
                                'EQUAL shift ctrl CLICK', oldHotkey='EQUAL ctrl alt')
             # merge math
             editUserKeymapItem('Node Editor', 'node.nw_merge_nodes',
-                               'COMMA ctrl alt', oldHotkey='COMMA shift ctrl')
+                               'COMMA shift alt', oldHotkey='COMMA shift ctrl')
             editUserKeymapItem('Node Editor', 'node.nw_merge_nodes',
-                               'PERIOD ctrl alt', oldHotkey='PERIOD shift ctrl')
+                               'PERIOD shift alt', oldHotkey='PERIOD shift ctrl')
             editUserKeymapItem('Node Editor', 'node.nw_merge_nodes',
-                               'SLASH ctrl alt', oldHotkey='SLASH shift ctrl')
+                               'SLASH shift alt', oldHotkey='SLASH shift ctrl')
             editUserKeymapItem('Node Editor', 'node.nw_merge_nodes',
-                               'EIGHT ctrl alt', oldHotkey='EIGHT shift ctrl')
+                               'EIGHT shift alt', oldHotkey='EIGHT shift ctrl')
             editUserKeymapItem('Node Editor', 'node.nw_merge_nodes',
-                               'MINUS ctrl alt', oldHotkey='MINUS shift ctrl')
+                               'MINUS shift alt', oldHotkey='MINUS shift ctrl')
             editUserKeymapItem('Node Editor', 'node.nw_merge_nodes',
-                               'EQUAL ctrl alt', oldHotkey='EQUAL shift ctrl')
+                               'EQUAL shift alt', oldHotkey='EQUAL shift ctrl')
             # set mix/math type
             editUserKeymapItem('Node Editor', 'node.nw_batch_change',
-                               'M shift alt', oldHotkey='ZERO alt')
+                               'M ctrl alt', oldHotkey='ZERO alt')
             editUserKeymapItem('Node Editor', 'node.nw_batch_change',
-                               'COMMA shift alt', oldHotkey='COMMA alt')
+                               'COMMA ctrl alt', oldHotkey='COMMA alt')
             editUserKeymapItem('Node Editor', 'node.nw_batch_change',
-                               'PERIOD shift alt', oldHotkey='PERIOD alt')
+                               'PERIOD ctrl alt', oldHotkey='PERIOD alt')
             editUserKeymapItem('Node Editor', 'node.nw_batch_change',
-                               'SLASH shift alt', oldHotkey='SLASH alt')
+                               'SLASH ctrl alt', oldHotkey='SLASH alt')
             editUserKeymapItem('Node Editor', 'node.nw_batch_change',
-                               'EIGHT shift alt', oldHotkey='EIGHT alt')
+                               'EIGHT ctrl alt', oldHotkey='EIGHT alt')
             editUserKeymapItem('Node Editor', 'node.nw_batch_change',
-                               'MINUS shift alt', oldHotkey='MINUS alt')
+                               'MINUS ctrl alt', oldHotkey='MINUS alt')
             editUserKeymapItem('Node Editor', 'node.nw_batch_change',
-                               'EQUAL shift alt', oldHotkey='EQUAL alt')
+                               'EQUAL ctrl alt', oldHotkey='EQUAL alt')
             editUserKeymapItem('Node Editor', 'node.nw_batch_change',
-                               'UP_ARROW shift alt', oldHotkey='UP_ARROW alt')
+                               'UP_ARROW ctrl alt', oldHotkey='UP_ARROW alt')
             editUserKeymapItem('Node Editor', 'node.nw_batch_change',
-                               'DOWN_ARROW shift alt', oldHotkey='DOWN_ARROW alt')
+                               'DOWN_ARROW ctrl alt', oldHotkey='DOWN_ARROW alt')
             # set node value
             editUserKeymapItem('Node Editor', 'node.nw_factor',
                                'ONE ctrl alt', oldHotkey='ONE shift ctrl alt')

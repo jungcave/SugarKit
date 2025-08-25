@@ -57,13 +57,13 @@ rotate			MB
   *snap			  alt
   ||
   right (x)		  alt 1			[*] num 3 # view axis
-    left		    ** alt 1 RB		[+]
+    left		    alt 1 RB		[+]
     active (selected)	    alt dbl 1		[*] shift num 3 # view axis
   front (-y)		  alt 2			[*] num 1 # view axis
-    back		    ** alt 2 RB		[+]
+    back		    alt 2 RB		[+]
     active (selected)	    alt dbl 2		[*] shift num 1 # view axis
   top (z)		  alt 3			[*] num 7 # view axis
-    bottom		    ** alt 3 RB		[+]
+    bottom		    alt 3 RB		[+]
     active (selected)	    alt dbl 3		[*] shift num 7 # view axis
   ||
   orbit opposite
@@ -329,8 +329,8 @@ hide
     groups only	  	  ctrl alt H		{n}
 
 select
-  active add (toggle)	shift LB	** ctrl LB	-- ** [*] ctrl LB # outliner > select	  
-    extend (keep active)  ctrl LB , 	** shift LB	-- ** [*,] shift LB # outliner > select
+  active add (toggle)	ctrl LB
+    extend (keep active)  shift LB ,
                           shift ctrl LB
   ||
   all			dbl A			[*] A
@@ -485,7 +485,7 @@ Overlay plane on rounded area {TexTools}:
     ||
     boolean		  shift alt B L		[+]
     ||
-    bool tool		  shift alt T B	 **  B T	{b} [*] shift ctrl B # bool tool
+    bool tool		  shift alt B T		{b} [*] shift ctrl B # bool tool
       difference	    shift alt dbl -	    [*] shift ctrl num -
       union		    shift alt dbl =	    [*] shift ctrl num +
       intersect		    shift alt dbl 8 	    [*] shift ctrl num 8
@@ -1106,7 +1106,7 @@ stencil texture
   cycle render slot	=			[*] J
     reverse		  -			[*] alt J
 
-[view]
+[view]						[-] shift B # image->[image.view_zoom_border]
   menu			ctrl `			[*] ` # view
   frame
     selected		F			[*] num . # view center 
@@ -1114,7 +1114,7 @@ stencil texture
 
 [mode]
   IMAGE			shift tab		[+]
-  UV			shift tab		** [*] ctrl tab
+  UV			shift tab		[*] ctrl tab
 
 [UV]
   sync mode		`			[+]
@@ -1332,9 +1332,9 @@ node wrangler		shift W			{b}
   mix nodes (auto)	shift ctrl drag RB	[*] shift ctrl RB # [node.nw_lazy_mix]
   selected merge auto	shift ctrl A M,./8-=	[*] ctrl 0,./8-= # [node.nw_merge_nodes]
     merge mix color	  shift ctrl M/8-=	[*] ctrl alt 0/8-= # [node.nw_merge_nodes]
-    merge math	    	  ctrl alt ,./8-=    ** shift alt	[*] shift ctrl ,./8-= # [node.nw_merge_nodes]
-  set mix/math type	shift alt M,./8-=    ** ctrl alt	[*] alt 0,./8-= # [node.nw_batch_change]
-    cycle		  shift alt up/down  ** ctrl alt	[*] alt up/down # [node.nw_batch_change]
+    merge math	    	  shift alt ,./8-= 	[*] shift ctrl ,./8-= # [node.nw_merge_nodes]
+  set mix/math type	ctrl alt M,./8-=    	[*] alt 0,./8-= # [node.nw_batch_change]
+    cycle		  ctrl alt up/down  	[*] alt up/down # [node.nw_batch_change]
   set node value 1/0	ctrl alt 1/0		[*] shift ctrl alt 1/0
     1/0			  ctrl alt left/right	[*] shift ctrl alt left/right
     -+0.1		  alt left/right
