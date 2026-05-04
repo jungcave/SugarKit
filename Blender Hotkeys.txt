@@ -8,12 +8,10 @@ random step: +1 -3 +1 -1 +1 -2 +2
   save			ctrl S
     as (new)		  ctrl alt S		[*] shift ctrl S
   ||
-  new project		ctrl N
-    sugar		  tab space		[+]
-  open			ctrl O
-    sugar		  tab ctrl		[+]
-    recent		  shift ctrl O 
-      sugar		    tab shift		[+]
+  new project		ctrl N , tab space	[x]
+  open			ctrl O , tab ctrl	[x]
+    recent		  shift ctrl O , 
+			  tab shift		[x]
   ||
   import obj		shift ctrl I , 		[+]
 			shift ctrl W		[+]
@@ -101,12 +99,9 @@ annotate (grease pencil)
   ||
   quad			shift ctrl alt Q	[*] ctrl alt Q
 
-view camera		0			[_] num 0 # camera
-    sugar		    space tab		[+]
-  set active as camera    ctrl 0		[_] ctrl num 0
-    sugar		    space ctrl		[+]
-  align camera to view	  alt 0			[_] ctrl alt num 0
-    sugar		    space alt		[+]
+view camera		0 , space tab		[_,x] num 0 # camera
+  set active as camera    ctrl 0 , space ctrl	[_,x] ctrl num 0
+  align camera to view	  alt 0	, space alt	[_,x] ctrl alt num 0
 
 view region
   render		Z X			[*] ctrl B # render region , viewer region
@@ -128,25 +123,24 @@ view interface
   show/hide (all)	  alt .			[*,+] shift alt Z # context toggle [space_data.overlay.show_overlays]
   ||
   floor		  	ctrl alt .		[+]
-    grid (ortho)	  ctrl alt ,		[+]
-  relation lines	ctrl alt /		[+]
-  wireframe		ctrl alt W		[+]
-  normals		ctrl alt N		[+]
-    sugar		  Z space		[+]
+    grid [for ortho]	ctrl alt ,		[+]
+  wireframes		ctrl alt W		[+]
+  normals		ctrl alt N , Z space	[+]
 
 [x-ray]
-  toggle		, , Z shift		[*,+] alt Z # toggle x-ray
+  toggle		, , Z shift		[*,x] alt Z # toggle x-ray
 
 [shading]
   menu (pie)		shift .			[*] Z # shading
     list		  shift Z		[+]
   toggle
-    wireframe		. , Z alt		[*,+] shift Z # toggle shading type
+    wireframe		. , Z alt		[*,x] shift Z # toggle shading type
       color		  shift alt .		[+]
     solid		dbl . , alt dbl Z	[+,+]
-      render color	  shift alt Z 		[+]
+      color		  shift alt , , 	[+]
+			  shift alt Z 		[+]
     material		alt Z			[+]
-    render		tab Z			[+]
+    render		Z tab			[x]
   ||
   cavity		ctrl alt C		[+]
   scene world (env)	ctrl alt E		[+]
@@ -155,19 +149,20 @@ view interface
 [render]
   engine		shift ctrl alt tab	[+]
   render 
-    image		shift ctrl alt R	[*] F12 # screen > render
-    animation		shift ctrl alt '	[*] ctrl F12 # screen > render > [v]:animation
+    image [F12]		shift ctrl alt R	[+]
+    animation [ctrl F12]shift ctrl alt ' 	[+]
   view 
-    render		shift ctrl alt V	[*] F11 # screen > view/hide render view
-    animation		shift ctrl alt ;	[*] ctrl F11 # screen > play render animation
+    render [F11]	shift ctrl alt V	[+]
+    animation [ctrl F11]shift ctrl alt ;	[+]
 
-[object props]
+object props
   viewport display
-    display solid/wire	ctrl , , Z ctrl		[+,+]
+    wireframe		Z W			[x]
+    in front (show)	Z S			[x]
+    display solid/wire	ctrl , , Z ctrl		[+,x]
       *all selected	  alt
-    ||
     color		C			{n}
-      opacity (toggle)	  9 , Z tab
+      opacity (toggle)	  9 , Z `
 
 Fix image as plane blend mode:
 - material > settings > blend mode [opaque]
@@ -218,7 +213,7 @@ Fix image as plane blend mode:
       from 11 to 20	  ctrl alt 1-0		[*] shift alt 1-0 # hide collection
     isolate		shift ctrl H		[*] ctrl H [-,-] 1-0 , alt 1-0
 
-sugar tweak select				[-] C , B , ctrl drag RB , shift ctrl drag RB
+tweak select					[-] C , B , ctrl drag RB , shift ctrl drag RB
   box (set)	drag LB				[+]
     extend  	  shift drag LB			[+]
     subtract	  shift ctrl drag LB		[+]
@@ -263,7 +258,7 @@ select tool
     mesh primitives	  shift 1		[+]
       plane	  	    shift 2		[+]
       cube		    shift 3		[+]
-    image		  shift 4		[+]
+    image (bg)		  shift 4		[+]
     curve (bezier)	  shift 5		[+]
     lattice		  shift 6		[+]
     text		  shift 7		[+]
@@ -283,13 +278,12 @@ select tool
     linked		  ctrl alt D 		[*] alt D
   ||
   join			ctrl J , dbl J		[,+]
-  mirror (invert)	ctrl I			[*] ctrl M # mirror
-    sugar		  ctrl dbl alt		[+]
+  mirror (invert)	ctrl I , ctrl dbl alt	[*,x] ctrl M # mirror
   ||
   delete		ctrl X			[*#] X # 3d->object > delete [_]:confirm
     no confirm		  clk backspace		[*] delete
-    globally		  shift ctrl X 		[*] shift X
-      no confirm	    shift backspace	[*] shift delete
+    globally		  ctrl alt X		[*] shift X
+      no confirm	    alt backspace	[*] shift delete
 
 shade
   smooth		8 , 2			[+,+]
@@ -303,12 +297,12 @@ linked
   ||
   link 			ctrl L , ctrl E		[,+]
     material		  shift Q		[+]
-      sugar (obdata)	  ctrl dbl shift 	[+]
+    obdata		  ctrl dbl shift 	[x]
     to group		  shift ctrl L		[*] shift M # link to collection
   ||
   make single (unlink)  alt L , alt E		[+,+] object > relations > make single user > object & data & mat
     materials (split)	  alt M , alt Q		[+,+] object > relations > make single user > materials
-      sugar (obdata)	  alt dbl ctrl		[+]
+    obdata		  alt dbl ctrl		[x]
     complete		  ctrl alt L		[+] object > relations > make single user > object & data & material
 
 parent
@@ -377,7 +371,7 @@ Align pivot rotation to orientation (to one of its edges/faces):
 - orientations->delete orientation [x]
 
 actions
-  search (execute) [F3]	ctrl space		[+]
+  search [F3] (execute)	ctrl space		[+]
   favorites menu	alt space		[*] Q # quick favorites
   ||
   undo			ctrl Z
@@ -430,34 +424,32 @@ object transform
     to orientation	  ctrl alt T , alt T	[+,+]
 
 [orientation]
-  menu			shift alt O 		[*] , # orientation
-    sugar		  shift alt dbl ctrl	[+]
+  menu			shift alt O , 		[*] , # orientation
+			shift alt dbl ctrl	[x]
   ||
-  create orientation	shift ctrl ,		[+]
-    sugar		  shift ctrl dbl alt	[+]
-  delete orientation	ctrl alt ,		[+]
-    sugar		  ctrl alt dbl shift	[+]
+  create orientation	shift ctrl , , 		[+]
+			shift ctrl dbl alt	[x]
+  delete orientation	ctrl alt , , 		[+]
+			ctrl alt dbl shift	[x]
 
 [pivot]
-  menu			shift alt P 		[*] . # pivot point
-    sugar		  alt dbl shift		[+] 
+  menu			shift alt P , 		[*] . # pivot point
+			alt dbl shift		[x] 
   ||
   transform mode	shift V			[*] ctrl . # object > [wm.context_toggle] context:[tool_settings.use_transform_data_origin]
   to geometry		alt V 			[+]
     to center		  alt C			[+]
   to 3d-cursor		shift ctrl V 		[+]
 
-[snapping] 		O			[*] shift tab # [wm.context_toggle] context:[tool_settings.use_snap]
-  sugar			X ctrl 			[+]
-  menu			  shift O		[*] shift ctrl tab # snapping , context enum menu
-    sugar		    shift dbl ctrl	[+]
+[snapping] 		O , X ctrl		[*,x] shift tab # [wm.context_toggle] context:[tool_settings.use_snap]
+  menu			  shift O , 		[*] shift ctrl tab # snapping , context enum menu
+			  shift dbl ctrl	[x]
+    project individual	    X `			[x]
 
-[proportional edit]	P			[*] O # [wm.context_toggle] context:[tool_settings.use_proportional_edit]
-  sugar			X shift			[+]
-  menu			  shift P		[*] shift O # proportional editing falloff
-    sugar		    shift dbl alt	[+]
-  connected [mesh/curve]  alt P			[*] alt O # [wm.context_toggle] context:[tool_settings.use_proportional_connected]
-    sugar		    X tab		[+]
+[proportional edit]	P , X shift		[*,x] O # [wm.context_toggle] context:[tool_settings.use_proportional_edit]
+  menu			  shift P , 		[*] shift O # proportional editing falloff
+			  shift dbl alt		[x]
+  connected [mesh/curve]  alt P , X tab		[*,x] alt O # [wm.context_toggle] context:[tool_settings.use_proportional_connected]
 
 //
 // PROPERTIES
@@ -520,11 +512,11 @@ Overlay plane on rounded area {TexTools}:
     lattice		  shift alt dbl L	[+]
     shrink wrap	[decal]	  shift alt S W		[+]
     simple deform [bend]  shift alt S D		[+]
-      setup bend   	    shift alt S B	{n}
+      setup bend   	    shift alt S LB	{n}
     surf. (copy) deform	  shift alt C D		[+]
     ||
     (extrapolate) array	  shift alt dbl X	[+]
-      setup radial array    shift alt S R	{n}
+      setup radial array    shift alt X LB	{n}
     screw		  shift alt S C		[+]
     ||
     subdiv (cycle lvl)	  shift alt dbl `-5	[*] ctrl 0-5 # subdivision
@@ -539,7 +531,7 @@ Overlay plane on rounded area {TexTools}:
       intersect		    alt 4		[_] shift ctrl num 8
       slice		    alt 3		[_] shift ctrl num /
     ||
-    geometry node	  shift alt dbl G	{n}
+    geometry node	  shift alt dbl G	[+]
 
 actions (hovered)
   apply			ctrl A
@@ -581,7 +573,7 @@ copy	  	  	ctrl C
 
 [symmetry]
   axis			clk X,Y,Z		[+]
-    sugar y		  X alt			[+]
+    y			  X alt			[x]
 
 [auto merge]
   auto merge		J			[+]
@@ -613,12 +605,12 @@ copy	  	  	ctrl C
     with loop (release)	  shift alt =		[+]
   ||
   mirror (invert)	I			[*] shift ctrl M # select mirror [v]:extend
-    axis (extend)	  W X/alt/Z		[+,+,+]
+    axis (extend)	  W X/alt/Z		[x,x,x]
   ||
   linked (hovered)	L
     selected (extend)
       all [seam/mat]	  shift L , shift W	[*,+] ctrl L # select linked , select linked all
-    deselect (hovered)    alt W			[*,+] shift L # select linked [deselect]
+      deselect (hovered)    dbl L , alt W	[*,+] shift L # select linked [deselect]
 
 [mesh]
   menu			clk RB			[*] RB # 3d->mesh > call menu > RB [click]
@@ -640,17 +632,18 @@ copy	  	  	ctrl C
   ||
   delete
     menu	shift X				[*,-] X , delete # mesh > delete [wm.call_menu] name:[VIEW3D_MT_edit_mesh_delete]
-    delete	shift ctrl X , shift backspace	[+,+]
-    loose	  alt X				[+]
     dissolve	  ctrl X , clk backspace	[,*] ctrl delete  # [mesh.dissolve_mode]
-      limited	    shift alt X			[+]
+      edges	    alt X			[+]
+      limited	    ctrl alt X			[+]
+    delete	shift ctrl X , shift backspace	[+,+]
+      loose	  shift alt X			[+]
 
 connect
   [vert]
     connect path (link)	shift ctrl P , shift Q	[*,+] J # vertex connect path
     make new [_] (_)   	F
       f2 		  F 			{b}
-      quad fill		  ** ++	ctrl dbl shift	{n}
+      quad fill		  ** ++	ctrl A		{n}
     hook		shift ctrl H		[*] ctrl H
   [edge]
     bridge loop		shift ctrl B , alt F	[+,+]
@@ -668,7 +661,7 @@ divide
       to quads		  alt dbl T		[+]		
     poke faces [X] (*)	ctrl alt P , alt V	[+,+]
     intersect knife	ctrl alt K , 4		[+,+]
-      interceptive merge  ** ++ alt dbl ctrl	{n}
+      interceptive merge  ** ++ alt C		{n}
 
 combine
   [edge] 
@@ -679,8 +672,7 @@ combine
 mesh normals
     menu		shift N			[*] alt N # normals
     flip		alt N			[+]
-    recalc outside	alt dbl N		[*] shift N # recalculate normals [_]:in [-] shift ctrl N # recalculate normals [v]:in
-      sugar		  X space		[+]
+    recalc outside	alt dbl N , X space	[*,x] shift N # recalculate normals [_]:in [-] shift ctrl N # recalculate normals [v]:in
     point to target	shift ctrl N		[*] alt L # point normals to target
 
 mesh transform
@@ -702,7 +694,7 @@ tools/operations
     *individual           I
   bevel [edge]		B			[*] ctrl B # bevel [mesh.bevel] affect:[edges]
     *vert		  V
-    bevel [vert]	  V B			[*] shift ctrl B # bevel [mesh.bevel] affect:[vertices]
+    bevel [vert]	  alt B			[*] shift ctrl B # bevel [mesh.bevel] affect:[vertices]
       *constraint	    C
   loop cut		clk C			[*] ctrl R # [mesh.loopcut_slide]
     *align neighbour	  E / F
@@ -725,7 +717,7 @@ tools/operations
   ||
   rip [vert]
     tool		alt 2			[+]
-    sugar		alt drag RB		[*] V # rip , uv rip move
+    and move		alt drag RB		[*] V # rip , uv rip move
       with fill		  shift alt drag RB	[*] alt V # rip
   ||
   shrink/fatten (size)	alt S
@@ -733,7 +725,7 @@ tools/operations
   ||
   smooth [vert]		shift alt S		[+] 
   ||
-  crease [edge]		alt C			[*] shift E
+  crease [edge]		6			[*] shift E
     *clear		  -1
 
 [uv]		
@@ -811,9 +803,9 @@ select
       toggle		    dbl alt		[+]
   ||
   recalculate		ctrl R			[*,+] shift N # recalculate
+  dissolve	  	ctrl X , clk backspace	[,*] ctrl delete  # [curve.dissolve_verts]
   delete (menu)		shift X			[*,-] X , delete # curve > delete [wm.call_menu] name:[VIEW3D_MT_edit_curve_delete]
     vertices		  shift ctrl X		[+]
-  dissolve	  	ctrl X , clk backspace	[,*] ctrl delete  # [curve.dissolve_verts]
   ||
   tilt			alt T			[*] ctrl T # tilt
     clear		  ctrl alt T		[*] alt T # clear tilt
@@ -883,15 +875,13 @@ brush
   strength (effect)	shift E			[*] shift F # [wm.radial_control]
   ||
   softness		alt S			[+]
-  units (view/space)	alt U			[+]
-    sugar		  dbl alt		[+]
+  units (view/space)	alt U , dbl alt		[x]
   ||
   view falloff (toggle)	ctrl alt F		[+]
 
 [texture]
   select (menu)		shift T			[+]
-    set image		  ctrl T		{n}
-  angle (rotation)	alt R			[*] ctrl F
+    angle (rotation)	  alt R			[*] ctrl F
 
 [stroke]		LB
   invert		  ctrl LB
@@ -900,7 +890,7 @@ brush
   smooth (toggle)	shift ctrl clk LB  	[*] shift S # 3d->sculpt/vertex/weight/image > [wm.context_toggle] context:[tool_settings.|sculpt,vertex/weight/image_paint|.brush.use_smooth_stroke]
     radius		  R			[+]
   method					[-] E # context enum menu
-    line (toggle)	  alt clk LB		[+]
+    line (toggle)	  alt dbl LB		[+]
       *snap		    alt
     curve (toggle)	  shift alt clk LB	[+]
 
@@ -936,9 +926,11 @@ paint curve					[+] ctrl alt RB # wm.blend_strings_utf8_validate (dummy)
   apply			ctrl R			[+]
     quadriflow (remesh)	  shift ctrl F		[+]
 
-sugar mask
+draw mask
   box			shift drag RB		[+] sculpt > [paint.mask_box_gesture] value:[1.0]
+    front faces only	  B			[*#] B # [paint.mask_box_gesture] value:[1.0] [v]:front
     subtract		  shift ctrl drag RB	[+]
+      front faces only	    ctrl B		[+]
   line			alt drag RB		[+]
     subtract		  ctrl alt drag RB	[+]
   lasso			shift alt drag RB	[*] shift ctrl LB # sculpt > [paint.mask_lasso_gesture] value:[1.0] 
@@ -949,8 +941,6 @@ sugar mask
     *subtract		  ctrl
     *smooth		  shift
     lasso		  alt dbl 1		[+]
-  box front faces	B			[*#] B # [paint.mask_box_gesture] value:[1.0] [v]:front
-    subtract		  ctrl B		[+]
   ||
   menu			shift Q			[*] A # mask edit
     automask (brush)	  shift alt Q		[*] alt A # automasking
@@ -966,18 +956,18 @@ sugar mask
     *move start point	  space
     expand (normal)	  shift ctrl Q 		[*] shift alt A # [sculpt.expand] falloff:[normal]
   ||
-  shrink		shift -			[+]
-    sugar (by 1)	  shift dbl ctrl	[+]
-  grow			shift =			[+]
-    sugar (by 1)	  shift dbl alt		[+]
-  sharpen		shift alt -		[+]
-    sugar (by 1) 	  alt dbl ctrl		[+]
-  smooth (blur)		shift alt =		[+]
-    sugar (by 1)	  alt dbl shift		[+]
-  decontrast		shift ctrl -		[+]
-    sugar (by 1)	  ctrl dbl shift	[+]
-  contrast		shift ctrl =		[+]
-    sugar (by 1)	  ctrl dbl alt		[+]
+  shrink [auto]		shift -			[+]
+    by 1		  shift dbl ctrl	[x]
+  grow [auto]		shift =			[+]
+    by 1		  shift dbl alt		[x]
+  sharpen [auto]	shift alt -		[+]
+    by 1 		  alt dbl ctrl		[x]
+  smooth [auto] (blur)	shift alt =		[+]
+    by 1		  alt dbl shift		[x]
+  decontrast [auto]	shift ctrl -		[+]
+    by 1		  ctrl dbl shift	[x]
+  contrast [auto]	shift ctrl =		[+]
+    by 1		  ctrl dbl alt		[x]
   ||
   extract (duplicate)	shift ctrl D		[+]
   slice new (separate)	ctrl alt D		[+]
@@ -1018,11 +1008,12 @@ sugar mask
   ||
   extract (duplicate)	shift ctrl V		[+]
 
-loose part(s)					{n}
-  remesh		ctrl alt R
-  separate 		ctrl clk RB
-    join		  shift ctrl clk RB
-  delete invisible	** ++ ctrl alt V
+sculpt parts					{n}
+  loose
+    separate 		ctrl clk RB
+      join		  shift ctrl clk RB
+    remesh		ctrl alt R
+  delete all hidden	** ++ ctrl alt H
 
 trim/project
   box			shift X			[+]
@@ -1037,7 +1028,7 @@ trim/project
   multires/cycle	shift `-5		[*] ctrl 0-5 # subdivision  
 
 filters
-  tool			ctrl 4			[+] [wm.tool_set_by_id][builtin.mesh_filter]
+  tool			alt 4			[+] [wm.tool_set_by_id][builtin.mesh_filter]
   commands
     smooth		  shift alt S		[+]
     inflate		  shift alt F		[+]
@@ -1120,10 +1111,12 @@ selection mask
   weight		ctrl W			[*] ctrl F # 3d->weight > [wm.radial_control] primary:[tool_settings.weight_paint.brush.weight]
   unified color		U			[+]
 
-[texture mask]
-  select (menu)		T			[+] 
-    set image		  alt T			{n}
-  angle (rotation)	ctrl R			[*] ctrl alt F
+[texture]
+  select (menu)		T			[+]
+    angle (rotation)	  ctrl R		[*] ctrl F
+  mask
+    select (menu)	shift T			[+] 
+      angle (rotation)	  alt R			[*] ctrl alt F
 
 stencil texture
   move			drag RB			[*] RB [-] shift alt RB # stencil brush control [secondary]
@@ -1242,8 +1235,8 @@ stencil texture
   merge	(center)	shift V			[+]
   ||
   average island scale	shift ctrl A		[+]
-  pack islands		shift ctrl P 		[+]
-    sugar		  ctrl dbl shift	[+]
+  pack islands		shift ctrl P , 		[+]
+			ctrl dbl shift		[x]
   ||
   min stretch (smooth)	shift alt S		[+]
   stitch (reset move)	alt D			[*] alt V
@@ -1333,7 +1326,7 @@ Add displacement texture (silhouette):
   node relax		alt R			{ } shift R
     arrange [iter.: 2]	  ctrl alt A		[+]
 
-sugar tweak select				[-] C , B
+tweak select					[-] C , B
   box (set)		drag LB
     extend		  shift drag LB		[+]
     subtract		  shift ctrl drag LB	[+]
@@ -1353,11 +1346,11 @@ links
   mute (toggle)		ctrl drag LB		[*] ctrl alt drag RB # [node.links_mute]
   cut (delete/detach)	alt drag RB		[*] ctrl drag RM # node > [node.links_cut]
 
-frame (block)		dbl B			[*] ctrl J # node > join nodes [node.join]
+frame (block)		clk B			[*] ctrl J # node > join nodes [node.join]
   add to block		  ctrl B		[*] ctrl P # node > make parent [node.parent_set]
     detach 		    alt B		[*] alt P # node > detach nodes [node.detach]
 
-node group		G			[*] ctrl G
+node group		clk G			[*] ctrl G
   insert		  ctrl G		[+]
     separate		    alt G		[*] P # node > separate [node.group_separate]
   ungroup		  ctrl alt G
@@ -1384,6 +1377,7 @@ node group		G			[*] ctrl G
   texture image		  shift dbl T		[+]
     noise		    shift T N		[+]
     voronoi		    shift T V		[+]
+    environment tex	    shift T E		[+]
   color mods
     hsv (hue)		  shift dbl U		[+]
       rgb curves 	    shift dbl K		[+]
@@ -1394,8 +1388,6 @@ node group		G			[*] ctrl G
   vector mapping [scale]  shift dbl V		[+]
     normal map		    shift dbl N		[+]
       bump [norm to col]      shift B N		[+]
-  ||
-  environment tex	shift dbl E		[+]
 
 backimage					[-] alt RB # [node.backimage_sample]
   zoom in		ctrl =			[*] V # background image zoom
@@ -1433,7 +1425,7 @@ node wrangler		shift W			{b}
     -+0.01		  shift alt left/right
   ||
   detach outputs (only)	  alt D			[*] shift alt D # detach outputs
-  delete unused nodes	  alt X
+  delete unused		  alt X
   ||
   align nodes		  ctrl A		[*] shift =
   reset node		  alt R			[*] backspace
@@ -1498,13 +1490,6 @@ Addons:
     Node Relax (arrange nodes [iter.: 2]) 	{ }
 
 ИДЕИ ДЛЯ АДДОНОВ:
-- кастомизацировать меню quick favourites в settings 
-  https://projects.blender.org/blender/blender/issues/73178
-- хоткей быстрого сброса анимации в первый кадр [alt ']
-||
-- повторить последнее движение кистью в sculpt [ctrl alt Z]
-  https://projects.blender.org/blender/blender/pulls/113270
-||
 - вынести из сycles функционал для бейкинга в аддон правого меню (VisualBaker)
   [Bake]
   [add source (hp)]		-> [+] source (hp)
@@ -1526,38 +1511,14 @@ Addons:
       R [+X [v]]
       G [+Y [v]]
       B [+Z [v]]
-
-			OBJECT:					MESH:
-ATTACH [W+A]:		link mat: shift Q			connect: shift Q
-  alt:			  link dat: ctrl dbl shift		  face ctrl: ctrl dbl shift
-			  parent: F				  fill: F
-DETACH [W+D]:		unlink mat: alt Q			split: alt Q
-  alt:			  unlink dat: alt dbl ctrl		  interceptive merge: alt dbl ctrl
-			  unparent: alt F			  delete loose: alt X
-SELECT [W+A]:		linked mat: shift W 			linked: shift W
-  alt:			  linked dat: shift D 			  more: =
-DESELECT [W+D]:		linked mat: ... 			linked: alt W
-  alt:			  linked dat: ...  		 	  less: -
-
-
-
-			EDIT					DRAW
-EXTRUDE/CLOSE+INSERT	ctrl LB (+insert,-select,-move)		ctrl LB
-DELETE			alt LB (-insert)			alt LB
 ||
-SELECT SET		LB					LB
-SELECT EXTEND		shift LB				shift LB
-SELECT PATH		ctrl dbl LB				...
+- хоткей быстрого сброса анимации в первый кадр [alt ']
 ||
-POINT SLIDE		LB					LB (+select)
-POINT SLIDE ALIGED	dbl LB [+drag LB]			dbl LB [+drag LB]
-SEGMENT MOVE		drag RB					drag RB 	
-SEGMENT SCALE		shift drag RB				shift drag RB
-SEGMENT ROTATE		alt drag RB (+orient view)		alt drag RB (+orient view)
+- кастомизацировать меню quick favourites в settings 
+  https://projects.blender.org/blender/blender/issues/73178
 ||
-APPLY			...					enter (+LB free space if done this way :)
-
-
+- повторить последнее движение кистью в sculpt [ctrl alt Z]
+  https://projects.blender.org/blender/blender/pulls/113270
 
 
 

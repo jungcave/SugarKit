@@ -2,14 +2,14 @@ import bpy
 import importlib
 from .src.tools.SugarKeyconfigBuilder import BuildSugarKeyconfigOperator
 from .src.tools import SugarKit
-from .src.tools.SugarUtils import getClassesFromFileModule, addAddonKeymapItem, removeAddonKeymapItems
+from .src.tools.SugarUtils import getClassesFromFileModule
 
 
 bl_info = {
     "name": "Sugar Kit",
     "category": "Misc",
     "description": "QoL features.",
-    "author": "junxx",
+    "author": "jungxx",
     "version": (3, 1, 1),  # major version equals target Blender version
     "blender": (3, 6, 0),
 }

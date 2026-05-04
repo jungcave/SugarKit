@@ -62,15 +62,15 @@ def Hotkeys(isRegister):
                            'NINE')
         for kmn in ['Object Mode', 'Mesh', 'Sculpt', 'Vertex Paint', 'Weight Paint', 'Texture Paint']:
             addAddonKeymapItem(kmn, ObjectViewportAlphaToggleOperator.bl_idname,
-                               'TAB Z')
+                               'ACCENT_GRAVE Z')
         # Object Modifier Setups
         addAddonKeymapItem('Object Mode', ObjectModifierSetupAxisBendOperator.bl_idname,
-                           'B shift alt S')
+                           'LEFTMOUSE shift alt S')
         addAddonKeymapItem('Object Mode', ObjectModifierSetupRadialArrayOperator.bl_idname,
-                           'R shift alt S')
+                           'LEFTMOUSE shift alt X')
         # Objects Collections Unable Visibility
         for kmn in ['Object Mode', 'Outliner']:
-            addAddonKeymapItem(kmn, ObjectCollectionsEnableVisibility.bl_idname,
+            addAddonKeymapItem(kmn, ObjectUnhideAllCollectionsButKeepObjectsHiddenOperator.bl_idname,
                                'H ctrl alt')
         # Vertex Groups Ops
         addAddonKeymapItem('Mesh', VertexGroupRenamePanelOperator.bl_idname,
@@ -94,12 +94,6 @@ def Hotkeys(isRegister):
         # Curve Select Endpoints
         addAddonKeymapItem('Curve', CurveSelectEndpointsMenuOperator.bl_idname,
                            'E shift')
-        # Brush Texture Image
-        for kmn in ["Sculpt", "Vertex Paint", "Weight Paint", "Image Paint"]:
-            addAddonKeymapItem(kmn, BrushTextureImageSetMenuOperator.bl_idname,
-                               'T ctrl')
-        addAddonKeymapItem('Image Paint', BrushMaskTextureImageSetMenuOperator.bl_idname,
-                           'T alt')
         # Sculpt Draw Curve
         addAddonKeymapItem('Sculpt', SculptDrawCurveOperator.bl_idname,
                            'C shift alt')
@@ -129,6 +123,17 @@ def Hotkeys(isRegister):
                            'Q ctrl')
         addAddonKeymapItem('Image Paint', PaintMaskImageInvertOperator.bl_idname,
                            'Q alt')
+        # Pack Image/All, Unpack Image
+        addAddonKeymapItem('Image', ImagePackOperator.bl_idname,
+                           'K ctrl')
+        addAddonKeymapItem('Image', ImagePackOperator.bl_idname,
+                           'LEFT_CTRL Z')
+        addAddonKeymapItem('Window', PackAllSavedOperator.bl_idname,
+                           'SPACE shift ctrl')
+        addAddonKeymapItem('Image', ImageUnpackOperator.bl_idname,
+                           'K alt')
+        addAddonKeymapItem('Image', ImageUnpackOperator.bl_idname,
+                           'LEFT_ALT Z')
         # Image/Shading Create New
         addAddonKeymapItem('Node Editor', ShadingCreateNewOperator.bl_idname,
                            'N alt')
@@ -155,17 +160,6 @@ def Hotkeys(isRegister):
                            'C ctrl alt')
         addAddonKeymapItem('Node Editor', MaterialMakeSingleCopyOperator.bl_idname,
                            'TAB Z')
-        # Pack Image/All, Unpack Image
-        addAddonKeymapItem('Image', ImagePackOperator.bl_idname,
-                           'K ctrl')
-        addAddonKeymapItem('Image', ImagePackOperator.bl_idname,
-                           'LEFT_CTRL Z')
-        addAddonKeymapItem('Window', PackAllSavedOperator.bl_idname,
-                           'SPACE shift ctrl')
-        addAddonKeymapItem('Image', ImageUnpackOperator.bl_idname,
-                           'K alt')
-        addAddonKeymapItem('Image', ImageUnpackOperator.bl_idname,
-                           'LEFT_ALT Z')
         # Image/Shading Close
         addAddonKeymapItem('Image', ImageCloseOperator.bl_idname,
                            'X ctrl alt')
@@ -423,9 +417,9 @@ class ObjectViewportAlphaToggleOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class ObjectCollectionsEnableVisibility(bpy.types.Operator):
-    bl_label = "Enable Collections Visiblity"
-    bl_idname = "outliner.xx_outliner_unhide_all_collections"
+class ObjectUnhideAllCollectionsButKeepObjectsHiddenOperator(bpy.types.Operator):
+    bl_label = "Unhide All Collections But Keep Objects Hidden"
+    bl_idname = "object.xx_object_unhide_all_collections"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -508,7 +502,7 @@ class ObjectModifierSetupRadialArrayOperator(bpy.types.Operator):
 # / Edit Tools
 
 
-# TODO: InterceptiveMerge (ctrl alt I)
+# TODO: 3.2.x InterceptiveMerge (alt C)
 #
 # - create vertex group from selected (1 for intersect)
 # - select more (face step [_])
@@ -766,70 +760,6 @@ class CurveSelectEndpointsOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# / Brush Tools
-
-
-class BrushTextureImageSetMenuOperator(bpy.types.Operator):
-    bl_label = "Brush Texture Image Set Menu"
-    bl_idname = "paint.xx_brush_texture_image_set_active_menu"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        tex = getActiveBrushTextureInContext(context)
-        if not tex:
-            self.report({'INFO'}, "Brush has no texture!")
-            return {'FINISHED'}
-        if not hasattr(tex, 'image'):
-            self.report({'INFO'}, "Brush texture type has no image attribute!")
-            return {'FINISHED'}
-
-        context.scene.xx_active_brush_texture_image = tex.image
-        bpy.ops.wm.call_menu(
-            name=BrushTextureImageSetMenu.bl_idname)
-        return {'FINISHED'}
-
-
-class BrushTextureImageSetMenu(bpy.types.Menu):
-    bl_label = "Set Texture Image"
-    bl_idname = "sk_brush_texture_image_set_active_menu"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.template_ID(
-            context.scene, "sk_active_brush_texture_image", new="image.new", open="image.open")
-
-
-class BrushMaskTextureImageSetMenuOperator(bpy.types.Operator):
-    bl_label = "Brush Mask Texture Image Set Menu"
-    bl_idname = "paint.xx_brush_mask_texture_image_set_active_menu"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        tex = getActiveBrushMaskTextureInContext(context)
-        if not tex:
-            self.report({'INFO'}, "Brush mask has no texture!")
-            return {'FINISHED'}
-        if not hasattr(tex, 'image'):
-            self.report(
-                {'INFO'}, "Brush mask texture type has no image attribute!")
-            return {'FINISHED'}
-
-        context.scene.xx_active_brush_mask_texture_image = tex.image
-        bpy.ops.wm.call_menu(
-            name=BrushMaskTextureImageSetMenu.bl_idname)
-        return {'FINISHED'}
-
-
-class BrushMaskTextureImageSetMenu(bpy.types.Menu):
-    bl_label = "Set Mask Texture Image"
-    bl_idname = "sk_brush_mask_texture_image_set_active_menu"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.template_ID(
-            context.scene, "sk_active_brush_mask_texture_image", new="image.new", open="image.open")
-
-
 # / Sculpt Tools
 
 
@@ -870,13 +800,13 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
     bl_label = "Sculpt Trim Curve Modal"
     bl_options = {"REGISTER", "UNDO"}
 
-    DRAW_HEADER_TEXT = "Trim Curve Innards (Draw)"
+    DRAW_HEADER_TEXT = "Draw Trim Curve"
     DRAW_STATUS_TEXT = " ".join([
         "Cancel: Esc |",
         "Pass: Ent/Space |",
         "Draw: LM"
     ])
-    HEADER_TEXT = "Trim Curve Innards (Toggle: T)"
+    HEADER_TEXT = "Trim Curve Interior (Toggle: T)"
     EXTERIOR_HEADER_TEXT = "Trim Curve Exterior (Toggle: T)"
     STATUS_TEXT = " ".join([
         "Cancel: Esc |",
@@ -885,12 +815,11 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
         "Select Whole, Path: Shift+Dbl+LM, Ctrl+Dbl+LM |",
         "Extrude/Insert/Close: Ctrl+LM |",
         "Delete: Alt+LM |",
-        "Move, Rotate, Scale: RM, Shift+RM, Alt+RM |",
+        "Move, Scale, Rotate: RM, Shift+RM, Alt+RM |",
         "All, Invert: A, Alt+A |",
         "Vector, Auto, Toggle: 1, 2, Dbl+Alt/LM |",
         "Recalc: Ctrl+R |",
         "Smooth: Shift+Alt+S |",
-        "Focus: SPACE |",
         "Undo, Redo: Ctrl+Z, Shift+Ctrl+Z",
     ])
 
@@ -1013,13 +942,13 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
         # PASS_THROUGH - execute modal defined operator and restart loop
         # RUNNING_MODAL - direct call operator and restart loop
         try:
+            #: If/elif fold level: 4
+            # C(event.type, ": ", event.value)
+
             global glob
             isPen = not self.is_draw
             isInBetweenTools = True if self.has_entered_in_between_tools else False
             self.has_entered_in_between_tools = False
-
-            #: If/elif fold level: 4
-            # C(event.type, ": ", event.value)
 
             if (self.has_chandes_header_by_submodal):
                 setModalTextInContext(
@@ -1131,7 +1060,7 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                 return {'PASS_THROUGH'}
 
             # / RUN OPS
-            # Toggle innards/exterior
+            # Toggle Interior/exterior
             elif isPen and eventKeyIs(event, 'T'):
                 self.is_exterior = not self.is_exterior
                 setModalTextInContext(
@@ -1159,29 +1088,29 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                 bpy.ops.curve.dissolve_verts()
                 return {'RUNNING_MODAL'}
 
-            # Move, Rotate, Scale
+            # Move, Scale, Rotate
             elif isPen and eventKeyIs(event, 'RIGHTMOUSE'):
                 bpy.ops.transform.translate('INVOKE_DEFAULT')
                 self.has_chandes_header_by_submodal = True
                 return {'RUNNING_MODAL'}
             elif isPen and eventKeyIs(event, 'RIGHTMOUSE shift'):
-                bpy.ops.transform.rotate('INVOKE_DEFAULT')
+                bpy.ops.transform.resize('INVOKE_DEFAULT')
                 self.has_chandes_header_by_submodal = True
                 return {'RUNNING_MODAL'}
             elif isPen and eventKeyIs(event, 'RIGHTMOUSE alt'):
-                bpy.ops.transform.resize('INVOKE_DEFAULT')
+                bpy.ops.transform.rotate('INVOKE_DEFAULT')
                 self.has_chandes_header_by_submodal = True
                 return {'RUNNING_MODAL'}
             elif isPen and eventKeyIs(event, 'D'):
                 bpy.ops.transform.translate('INVOKE_DEFAULT')
                 self.has_chandes_header_by_submodal = True
                 return {'RUNNING_MODAL'}
-            elif isPen and eventKeyIs(event, 'R'):
-                bpy.ops.transform.rotate('INVOKE_DEFAULT')
-                self.has_chandes_header_by_submodal = True
-                return {'RUNNING_MODAL'}
             elif isPen and eventKeyIs(event, 'S'):
                 bpy.ops.transform.resize('INVOKE_DEFAULT')
+                self.has_chandes_header_by_submodal = True
+                return {'RUNNING_MODAL'}
+            elif isPen and eventKeyIs(event, 'R'):
+                bpy.ops.transform.rotate('INVOKE_DEFAULT')
                 self.has_chandes_header_by_submodal = True
                 return {'RUNNING_MODAL'}
 
@@ -1257,10 +1186,6 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                 self.history_steps += 1
                 return {'RUNNING_MODAL'}
 
-            # Focus
-            elif isPen and eventKeyIs(event, 'SPACE CLICK'):
-                bpy.ops.view3d.view_selected(use_all_regions=False)
-                return {'RUNNING_MODAL'}
             # Undo, Redo
             elif isPen and eventKeyIs(event, 'Z ctrl') and self.history_steps > 0:
                 self.history_steps -= 1
@@ -1322,45 +1247,60 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
             self.trim_curve.display_type = 'WIRE'
             bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='MEDIAN')
 
-            # / Project trim
-            # Knife project and hide not intersected
-            bpy.ops.object.select_all(action='DESELECT') # ensure all deselected before select target
+            # Ensure all deselected before select target
+            bpy.ops.object.select_all(action='DESELECT')
             setActiveObjectInContext(
                 context, self.target_obj, delPrev=False, mode='EDIT')
             self.trim_curve.select_set(True)
             bpy.ops.mesh.select_all(action='DESELECT')
+
+            # / Project trim
             bpy.ops.mesh.knife_project(cut_through=True)
+            # Delete intersected part and select border
             if self.is_exterior:
                 bpy.ops.mesh.select_all(action='INVERT')
                 bpy.ops.mesh.delete(type='EDGE')
                 bpy.ops.mesh.select_all(action='SELECT')
-                #
-                bpy.ops.mesh.region_to_loop() # select border
+                bpy.ops.mesh.region_to_loop()  # select border
                 bpy.ops.mesh.hide(unselected=True)
+                # Get is cutted through by loose parts count
+                self.trim_curve.select_set(False)
+                bpy.ops.mesh.separate(type='LOOSE')
+                bpy.ops.object.mode_set(mode="OBJECT")
+                cuttedThrough = int(len(context.selected_objects)) > 1
+                bpy.ops.object.join()
+                bpy.ops.object.mode_set(mode='EDIT')
+                self.trim_curve.select_set(True)
                 bpy.ops.mesh.select_all(action='SELECT')
             else:
-                # Delete intersected part and select border
                 bpy.ops.mesh.hide(unselected=True)
-                bpy.ops.mesh.region_to_loop() # select border
+                bpy.ops.mesh.region_to_loop()  # select border
+                # Get is cutted through by created faces count
+                bpy.ops.mesh.edge_face_add()
+                cuttedThrough = int(
+                    len(getSelectedFacesOfObject(self.target_obj))) > 1
+                bpy.ops.mesh.delete(type='FACE')
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.mesh.region_to_loop()  # select border
                 bpy.ops.mesh.select_all(action='INVERT')
                 bpy.ops.mesh.delete(type='EDGE')
                 bpy.ops.mesh.select_all(action='SELECT')
                 bpy.ops.mesh.reveal(select=False)
-                
             # Close mesh (fill/bridge)
-            if len(getSelectedFacesOfObject(self.target_obj)) == 0:            
+            if not cuttedThrough:
                 bpy.ops.mesh.edge_face_add()
-                # Repeat cut to preserve form
-                self.trim_curve.select_set(True)
-                bpy.ops.mesh.knife_project(cut_through=True)
             else:
                 if not self.is_exterior:
                     bpy.ops.mesh.hide(unselected=True)
                     bpy.ops.mesh.delete(type='FACE')
                     bpy.ops.mesh.select_all(action='SELECT')
                 bpy.ops.mesh.bridge_edge_loops()
-                bpy.ops.mesh.select_all(action='SELECT')
+            if not self.is_exterior:
+                # Repeat cut to preserve form
+                bpy.ops.mesh.knife_project(cut_through=True)
+            bpy.ops.mesh.select_all(action='SELECT')
             bpy.ops.mesh.reveal(select=False)
+
             # Restore mode
             bpy.ops.object.mode_set(mode='SCULPT')
 
@@ -1482,7 +1422,7 @@ class SculptSymmetrizeWeldPanel(bpy.types.Panel):
         layout.operator("sculpt.symmetrize")
 
 
-# Loose Parts
+# Sculpt Parts
 
 
 class SculptHoveredLoosePartSeparateOperator(bpy.types.Operator):
@@ -1916,7 +1856,45 @@ class PaintMaskImageInvertOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# / Image/Shading (Resource Tools)
+# / Image/Shading Tools (Resources)
+
+# Pack
+
+
+class PackAllSavedOperator(bpy.types.Operator):
+    """Pack all saved instances into the .blend file."""
+    bl_label = "Pack All Saved"
+    bl_idname = "file.xx_pack_all_saved"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        try:
+            bpy.ops.file.pack_all()
+            self.report({'INFO'}, "All saved resources are packed!")
+        except Exception as er:
+            self.report({'ERROR'}, "{0}".format(er))
+
+        return {'FINISHED'}
+
+
+class ImagePackOperator(bpy.types.Operator):
+    bl_label = "Image Pack"
+    bl_idname = "file.xx_image_pack"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        bpy.ops.image.pack()
+        return {'FINISHED'}
+
+
+class ImageUnpackOperator(bpy.types.Operator):
+    bl_label = "Image Unpack"
+    bl_idname = "file.xx_image_unpack"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        bpy.ops.image.unpack(method='WRITE_ORIGINAL')
+        return {'FINISHED'}
 
 
 # Create New
@@ -2114,45 +2092,6 @@ class MaterialMakeSingleCopyOperator(bpy.types.Operator):
                 mat = obj.active_material
                 if mat:
                     obj.active_material = mat.copy()
-        return {'FINISHED'}
-
-
-# Pack
-
-
-class PackAllSavedOperator(bpy.types.Operator):
-    """Pack all saved instances into the .blend file."""
-    bl_label = "Pack All Saved"
-    bl_idname = "file.xx_pack_all_saved"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        try:
-            bpy.ops.file.pack_all()
-            self.report({'INFO'}, "All saved resources are packed!")
-        except Exception as er:
-            self.report({'ERROR'}, "{0}".format(er))
-
-        return {'FINISHED'}
-
-
-class ImagePackOperator(bpy.types.Operator):
-    bl_label = "Image Pack"
-    bl_idname = "file.xx_image_pack"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        bpy.ops.image.pack()
-        return {'FINISHED'}
-
-
-class ImageUnpackOperator(bpy.types.Operator):
-    bl_label = "Image Unpack"
-    bl_idname = "file.xx_image_unpack"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        bpy.ops.image.unpack(method='WRITE_ORIGINAL')
         return {'FINISHED'}
 
 

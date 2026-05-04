@@ -329,13 +329,12 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
         for k, v in {
             'PERIOD': 'show_floor',
             'COMMA': 'show_ortho_grid',
-            'SLASH': 'show_relationship_lines',
             'W': 'show_wireframes',
             'N': 'show_face_orientation',
         }.items():
-            add('Window', {'wm.context_toggle': {'data_path': 'space_data.overlay.' + v}},
+            add('3D View', {'wm.context_toggle': {'data_path': 'space_data.overlay.' + v}},
                 k + ' ctrl alt')
-        add('Window', {'wm.context_toggle': {'data_path': 'space_data.overlay.' + v}},
+        add('3D View', {'wm.context_toggle': {'data_path': 'space_data.overlay.show_face_orientation'}},
             'SPACE Z', head=True)
 
         # x-ray
@@ -347,8 +346,6 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
         # shading
         add('3D View', {'wm.call_menu_pie': {'name': 'VIEW3D_MT_shading_pie'}},
             'PERIOD shift', disableOld='Z')
-        add('3D View', {'wm.context_menu_enum': {'data_path': 'space_data.shading.wireframe_color_type'}},
-            'PERIOD shift alt')
         add('3D View', {'wm.context_menu_enum': {'data_path': 'space_data.shading.type'}},
             'Z shift')
 
@@ -356,20 +353,27 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             'PERIOD', disableOld='Z shift')
         add('3D View', 'view3d.toggle_shading',
             'LEFT_ALT Z')
+        add('3D View', {'wm.context_menu_enum': {'data_path': 'space_data.shading.wireframe_color_type'}},
+            'PERIOD shift alt')
+
         add('3D View', 'view3d.toggle_shading',
             'PERIOD DOUBLE_CLICK', setKmiProps=lambda kmi: setTypeProp(kmi, 'SOLID'))
+        for kmn in ['Object Mode', 'Mesh', 'Sculpt']:
+            add(kmn, {'wm.context_menu_enum': {'data_path': 'space_data.shading.color_type'}},
+                'COMMA shift alt')
+            add(kmn, {'wm.context_menu_enum': {'data_path': 'space_data.shading.color_type'}},
+                'Z shift alt')
         add('3D View', 'view3d.toggle_shading',
             'Z alt DOUBLE_CLICK', setKmiProps=lambda kmi: setTypeProp(kmi, 'SOLID'))
         add('3D View', 'view3d.toggle_shading',
             'Z alt', setKmiProps=lambda kmi: setTypeProp(kmi, 'MATERIAL'))
-        for kmn in ['Object Mode', 'Mesh', 'Sculpt', 'Vertex Paint', 'Weight Paint', 'Image Paint']:
-            add(kmn, 'view3d.toggle_shading',
-                'Z TAB', setKmiProps=lambda kmi: setTypeProp(kmi, 'RENDERED'), head=True)
+        add('3D View', 'view3d.toggle_shading',
+            'TAB Z', setKmiProps=lambda kmi: setTypeProp(kmi, 'RENDERED'), head=True)
 
-        for kmn in ['Object Mode', 'Mesh', 'Sculpt']:
-            add(kmn, {'wm.context_menu_enum': {'data_path': 'space_data.shading.color_type'}},
-                'Z shift alt')
-        for k, v in {'C': 'show_cavity', 'E': 'use_scene_world'}.items():
+        for k, v in {
+            'C': 'show_cavity',
+            'E': 'use_scene_world'
+        }.items():
             add('3D View', {'wm.context_toggle': {'data_path': 'space_data.shading.' + v}},
                 k + ' ctrl alt')
 
@@ -377,18 +381,23 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             'ACCENT_GRAVE ctrl alt')
 
         # render
-        add('3D View', {'wm.context_toggle_enum': {'data_path': 'scene.render.engine'}},
+        add('Window', {'wm.context_menu_enum': {'data_path': 'scene.render.engine'}},
             'TAB shift ctrl alt')
         add('Screen', {'render.render': {'use_viewport': True}},
-            'R shift ctrl alt', disableOld='F12')
+            'R shift ctrl alt')
         add('Screen', {'render.render': {'use_viewport': True, 'animation': True}},
-            'QUOTE shift ctrl alt', disableOld='F12 ctrl')
+            'QUOTE shift ctrl alt')
         add('Screen', 'render.view_show',
-            'V shift ctrl alt', disableOld='F11')
+            'V shift ctrl alt')
         add('Screen', 'render.play_rendered_anim',
-            'SEMI_COLON shift ctrl alt', disableOld='F11 ctrl')
+            'SEMI_COLON shift ctrl alt')
 
-        # object viewport display
+        # object props
+        for kmn in ['Object Mode', 'Mesh', 'Sculpt', 'Vertex Paint', 'Weight Paint', 'Image Paint']:
+            add(kmn, {'wm.context_toggle': {'data_path': 'object.show_wire'}},
+                'W Z', head=True)
+            add(kmn, {'wm.context_toggle': {'data_path': 'object.show_in_front'}},
+                'S Z', head=True)
         add('3D View', {'wm.context_menu_enum': {'data_path': 'object.display_type'}},
             'COMMA ctrl')
         add('3D View', {'wm.context_menu_enum': {'data_path': 'object.display_type'}},
@@ -688,7 +697,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             'TWO shift repeat')
         add('Object Mode', 'mesh.primitive_cube_add',
             'THREE shift repeat')
-        add('Object Mode', {'wm.call_menu': {'name': 'VIEW3D_MT_image_add'}},
+        add('Object Mode', 'object.load_background_image',
             'FOUR shift repeat')
         add('Object Mode', 'curve.primitive_bezier_curve_add',
             'FIVE shift repeat')
@@ -804,17 +813,17 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             'Clip Graph Editor': 'clip.graph_delete_knot',
         }.items():
             if kmn.startswith('Grease Pencil Stroke '):
-                add(kmn, v, 'X shift ctrl', disableOld='X shift')
-                add(kmn, v, 'BACK_SPACE shift', disableOld='DEL shift')
+                add(kmn, v, 'X ctrl alt', disableOld='X shift')
+                add(kmn, v, 'BACK_SPACE alt', disableOld='DEL shift')
             elif kmn == 'Object Mode':
                 add(kmn, {v: {'use_global': True}},
-                    'X shift ctrl', disableOld='X shift')
+                    'X ctrl alt', disableOld='X shift')
                 add(kmn, {v: {'use_global': True, 'confirm': False}},
-                    'BACK_SPACE shift', disableOld='DEL shift')
+                    'BACK_SPACE alt', disableOld='DEL shift')
             else:
-                add(kmn, v, 'X shift ctrl', disableOld='X shift')
+                add(kmn, v, 'X ctrl alt', disableOld='X shift')
                 add(kmn, {v: {'confirm': False}},
-                    'BACK_SPACE shift', disableOld='DEL shift')
+                    'BACK_SPACE alt', disableOld='DEL shift')
 
         # shade
         add('Object Mode', 'object.shade_smooth',
@@ -1087,6 +1096,8 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             'O shift', disableOld='TAB shift ctrl')
         add('3D View', {'wm.call_panel': {'name': 'VIEW3D_PT_snapping'}},
             'LEFT_CTRL shift DOUBLE_CLICK')
+        add('3D View', {'wm.context_toggle': {'data_path': 'scene.tool_settings.use_snap_project'}},
+            'ACCENT_GRAVE X', head=True)
 
         add('UV Editor', {'wm.context_toggle': {'data_path': 'tool_settings.use_snap_uv'}},
             'O', disableOld='TAB shift')
@@ -1101,6 +1112,8 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
 
         add('Node Editor', {'wm.context_toggle': {'data_path': 'tool_settings.use_snap_node'}},
             'O', disableOld='TAB shift')
+        add('Node Editor', {'wm.context_toggle': {'data_path': 'tool_settings.use_snap_node'}},
+            'LEFT_CTRL X')
         add('Node Editor', {'wm.context_menu_enum': {'data_path': 'tool_settings.snap_node_element'}},
             'O shift', disableOld='TAB shift ctrl')
         add('Node Editor', {'wm.context_menu_enum': {'data_path': 'tool_settings.snap_node_element'}},
@@ -1163,7 +1176,8 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             'R DOUBLE_CLICK': 'REMESH',
             'E D': 'DECIMATE',
             'T DOUBLE_CLICK': 'TRIANGULATE',
-            'L B': 'BOOLEAN'
+            'L B': 'BOOLEAN',
+            'G DOUBLE_CLICK': 'NODES',
         }.items():
             add('Object Mode', 'object.modifier_add',
                 k + ' shift alt', setKmiProps=lambda kmi: setTypeProp(kmi, modType))
@@ -1425,16 +1439,18 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
         add('Mesh', 'mesh.separate',
             'A shift alt', setKmiProps=lambda kmi: setTypeProp(kmi, 'LOOSE'))
 
+        # mesh delete
         add('Mesh', {'wm.call_menu': {'name': 'VIEW3D_MT_edit_mesh_delete'}},
             'X shift', disableOld='X')
         disable('Mesh', {'wm.call_menu': {'name': 'VIEW3D_MT_edit_mesh_delete'}},
                 'DEL')
-        add('Mesh', 'mesh.delete', 'X shift ctrl')
-        add('Mesh', 'mesh.delete', 'BACK_SPACE shift')
-        add('Mesh', 'mesh.delete_loose', 'X alt')
         add('Mesh', 'mesh.dissolve_mode',
             'BACK_SPACE CLICK', disableOld='DEL ctrl')
+        add('Mesh', 'mesh.dissolve_edges', 'X alt')
         add('Mesh', 'mesh.dissolve_limited', 'X shift alt')
+        add('Mesh', 'mesh.delete', 'X shift ctrl')
+        add('Mesh', 'mesh.delete', 'BACK_SPACE shift')
+        add('Mesh', 'mesh.delete_loose', 'X ctrl alt')
 
         # connect
         add('Mesh', 'mesh.vert_connect_path', 'P shift ctrl', disableOld='J')
@@ -1501,7 +1517,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
         add('Mesh', 'mesh.bevel',
             'B', disableOld='B ctrl', setKmiProps=lambda kmi: setAffectProp(kmi, 'EDGES'))
         add('Mesh', 'mesh.bevel',
-            'B V', disableOld='B shift ctrl', setKmiProps=lambda kmi: setAffectProp(kmi, 'VERTICES'), head=True)
+            'B alt', disableOld='B shift ctrl', setKmiProps=lambda kmi: setAffectProp(kmi, 'VERTICES'))
 
         add('Mesh', {'mesh.loopcut_slide': {'release_confirm': False}},
             'C CLICK', disableOld='R ctrl')
@@ -1538,7 +1554,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
         add('Mesh', {'mesh.vertices_smooth': {'factor': 0.5, 'wait_for_input': False}},
             'S shift alt')
         add('Mesh', 'transform.edge_crease',
-            'C alt', disableOld='E shift')
+            'SIX', disableOld='E shift')
 
         # uv
         for kmn, v in {
@@ -1807,8 +1823,6 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
         # texture
         for kmn, v in {
             'Sculpt': 'tool_settings.sculpt.brush',
-            'Vertex Paint': 'tool_settings.vertex_paint.brush',
-            'Image Paint': 'tool_settings.image_paint.brush',
         }.items():
             add(kmn, {'wm.call_panel': {'name': 'VIEW3D_PT_tools_brush_texture'}},
                 'T shift')
@@ -1840,7 +1854,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             disable(kmn, {'wm.context_menu_enum': {
                     'data_path': 'tool_settings.' + v + '.brush.stroke_method'}}, 'E')
             add(kmn, {'wm.context_toggle_enum': {'data_path': 'tool_settings.' + v + '.brush.stroke_method'}},
-                'LEFTMOUSE alt CLICK', setKmiProps=lambda kmi: setContextToggleValuesProp(kmi, 'LINE', 'SPACE'))
+                'LEFTMOUSE alt DOUBLE_CLICK', setKmiProps=lambda kmi: setContextToggleValuesProp(kmi, 'LINE', 'SPACE'))
             add(kmn, {'wm.context_toggle_enum': {'data_path': 'tool_settings.' + v + '.brush.stroke_method'}},
                 'LEFTMOUSE shift alt CLICK', setKmiProps=lambda kmi: setContextToggleValuesProp(kmi, 'CURVE', 'SPACE'))
 
@@ -2037,7 +2051,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
 
         # filters
         add('Sculpt', {'wm.tool_set_by_id': {'name': 'builtin.mesh_filter'}},
-            'FOUR ctrl')
+            'FOUR alt')
         add('Sculpt', 'sculpt.mesh_filter',
             'S shift alt', setKmiProps=lambda kmi: setTypeProp(kmi, 'SMOOTH'))
         add('Sculpt', 'sculpt.mesh_filter',
@@ -2155,9 +2169,25 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
         add('Image Paint', {'wm.context_toggle': {'data_path': 'scene.tool_settings.unified_paint_settings.use_unified_color'}},
             'U')
 
-        # texture mask
+        # texture
+        for kmn, v in {
+            'Vertex Paint': 'tool_settings.vertex_paint.brush',
+            'Image Paint': 'tool_settings.image_paint.brush',
+        }.items():
+            add(kmn, {'wm.call_panel': {'name': 'VIEW3D_PT_tools_brush_texture'}},
+                'T')
+            add(kmn, {'wm.radial_control': {
+                'data_path_primary': v + '.texture_slot.angle',
+                'rotation_path': v + '.texture_slot.angle',
+                'color_path': v + '.cursor_color_add',
+                'fill_color_path': '' if kmn == 'Sculpt' else v + '.color',
+                'fill_color_override_path': '' if kmn == 'Sculpt' else 'tool_settings.unified_paint_settings.color',
+                'fill_color_override_test_path': '' if kmn == 'Sculpt' else 'tool_settings.unified_paint_settings.use_unified_color',
+                'image_id': v}},
+                'R ctrl', disableOld='F ctrl')
+
         add('Image Paint', {'wm.call_panel': {'name': 'VIEW3D_PT_tools_mask_texture'}},
-            'T')
+            'T shift')
         add('Image Paint', {'wm.radial_control': {
             'data_path_primary': 'tool_settings.image_paint.brush.mask_texture_slot.angle',
             'rotation_path': 'tool_settings.image_paint.brush.mask_texture_slot.angle',
@@ -2167,7 +2197,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             'fill_color_override_test_path': 'tool_settings.unified_paint_settings.use_unified_color',
             'image_id': 'tool_settings.image_paint.brush',
             'secondary_tex': True}},
-            'R ctrl', disableOld='F ctrl alt')
+            'R alt', disableOld='F ctrl alt')
 
         # stencil texture
         for kmn in ['Vertex Paint', 'Image Paint', 'Sculpt']:
@@ -2361,7 +2391,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
 
     @classmethod
     def addFileBrowserHotkeys(cls):
-        add('File Browser', 'file.execute', 
+        add('File Browser', 'file.execute',
             'SPACE')
         add('File Browser', 'file.rename',
             'R ctrl')
@@ -2466,13 +2496,13 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             'RIGHTMOUSE alt CLICK_DRAG', disableOld='RIGHTMOUSE ctrl CLICK_DRAG')
 
         # frame (block)
-        add('Node Editor', 'node.join', 'B DOUBLE_CLICK', disableOld='J ctrl')
+        add('Node Editor', 'node.join', 'B CLICK', disableOld='J ctrl')
         add('Node Editor', 'node.parent_set', 'B ctrl', disableOld='P ctrl')
         add('Node Editor', 'node.detach', 'B alt', disableOld='P alt')
 
-        # group
+        # node group
         add('Node Editor', 'node.group_make',
-            'G', disableOld='G ctrl')
+            'G CLICK', disableOld='G ctrl')
         add('Node Editor', 'node.group_insert',
             'G ctrl')
         add('Node Editor', 'node.group_separate',
@@ -2509,7 +2539,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             'N DOUBLE_CLICK': 'ShaderNodeNormalMap',
             'B N': 'ShaderNodeBump',
             # env
-            'E DOUBLE_CLICK': 'ShaderNodeTexEnvironment',
+            'E T': 'ShaderNodeTexEnvironment',
         }.items():
             add('Node Editor', {'node.add_node': {'use_transform': True}},
                 k + ' shift repeat', setKmiProps=lambda kmi: setTypeProp(kmi, v))
