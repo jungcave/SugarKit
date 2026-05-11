@@ -10,7 +10,7 @@ bl_info = {
     "category": "Misc",
     "description": "QoL features.",
     "author": "jungxx",
-    "version": (3, 1, 1),  # major version equals target Blender version
+    "version": (3, 1, 2),  # major version equals target Blender version
     "blender": (3, 6, 0),
 }
 

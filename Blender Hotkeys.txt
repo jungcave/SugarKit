@@ -191,8 +191,8 @@ Fix image as plane blend mode:
 3d-cursor
   set menu	  	Q LB			[*] shift S # snap
   to pointer	  	shift clk RB		[*] shift RB
-  to origin		clk Q		** dbl Q	[+]
-  to selected    	ctrl Q		** clk Q	[+]
+  to origin		dbl Q			[+]
+  to selected    	clk Q			[+]
 
 [view]						[-] shift B # image.view_zoom_border
   frame (selected)	clk space		[_] num . # frame selected
@@ -280,7 +280,7 @@ select tool
   join			ctrl J , dbl J		[,+]
   mirror (invert)	ctrl I , ctrl dbl alt	[*,x] ctrl M # mirror
   ||
-  delete		ctrl X			[*#] X # 3d->object > delete [_]:confirm
+  delete		ctrl X			[*#,+] X # 3d->object > delete [_]:confirm
     no confirm		  clk backspace		[*] delete
     globally		  ctrl alt X		[*] shift X
       no confirm	    alt backspace	[*] shift delete
@@ -347,7 +347,7 @@ object
   duplicate		ctrl D			[+]
   join			ctrl J , dbl J		[+,+]
   ||
-  make single (copy)	ctrl alt C	** alt C	[+]
+  make single (copy)	alt C			[+]
   delete link		alt X			[+]
 
 collection
@@ -647,7 +647,7 @@ connect
     connect path (link)	shift ctrl P , shift Q	[*,+] J # vertex connect path
     make new [_] (_)   	F
       f2 		  F 			{b}
-      retopo fill	  ** ++	ctrl A		{x}
+      quad fill  	  ctrl Q		{x}
     hook		shift ctrl H		[*] ctrl H
   [edge]
     bridge loop		shift ctrl B , alt F	[+,+]
@@ -729,7 +729,7 @@ tools/operations
   ||
   smooth [vert]		shift alt S		[+] 
   ||
-  crease [edge]		6	** alt C		[*] shift E
+  crease [edge]		alt C			[*] shift E
     *clear		  -1
 
 [uv]		
@@ -894,7 +894,7 @@ brush
   smooth (toggle)	shift ctrl clk LB  	[*] shift S # 3d->sculpt/vertex/weight/image > [wm.context_toggle] context:[tool_settings.|sculpt,vertex/weight/image_paint|.brush.use_smooth_stroke]
     radius		  R			[+]
   method					[-] E # context enum menu
-    line (toggle)	  alt dbl LB	** clk	[+]
+    line (toggle)	  alt clk LB		[+]
       *snap		    alt
     curve (toggle)	  shift alt clk LB	[+]
 
@@ -1006,7 +1006,7 @@ draw mask
   ||
   hide (hovered)	H			[*] shift H # face sets visibility [hide active]
     isolate		  shift H		[*] H # face sets visibility [toggle visibility]
-    box			  shift ctrl H	** ctrl alt B	[+]
+    box			  ctrl alt B		[+]
   unhide (all)		dbl H , alt H		[,+]
   invert		ctrl H			[+]
   ||
@@ -1164,7 +1164,7 @@ stencil texture
     vertex color	  dbl F			[*] shift K # set vertex colors
     set gradient colors	  ctrl G		{x}
   ||
-  clone			alt C	** ctrl C	[+]
+  clone			ctrl C			[+]
     target (cursor)	  ctrl LB
 
 //
@@ -1197,7 +1197,7 @@ stencil texture
   ||
   set active		shift ctrl tab		{x}
     fake user (lock/zip)  K , clk Z
-    make single (copy) 	  ctrl alt C ** alt C , Z tab
+    make single (copy) 	  alt C , Z tab
     pack +save (keep)	  ctrl K , Z ctrl
       unpack		    alt K , Z alt
       all saved *pack+glob  shift ctrl space
@@ -1229,7 +1229,7 @@ stencil texture
   follow quads (rect)	shift ctrl F		[+]
   ||
   pin (clip)		C			[*] P
-    unpin		  alt C		** dbl C	[*] alt P # pin [v]:clear
+    unpin		  dbl C			[*] alt P # pin [v]:clear
     select (pined only)	  shift C		[*] shift P # selected pinned
       box		    B			[*] ctrl B # box select [v]:pinned
   ||
@@ -1253,9 +1253,9 @@ stencil texture
 
 [tools]
   2d-cursor
-    to origin		clk Q	** dbl Q		[+]
-      to center		  dbl Q	** ctrl Q		[*] shift C # image > cursor to center view
-    to selected		ctrl Q	** clk Q		[+]
+    to origin		dbl Q			[+]
+      to center		  ctrl Q		[*] shift C # image > cursor to center view
+    to selected		clk Q			[+]
     move to cursor	shift ctrl Q		[+]
   brush tools
     grab		alt 1			[+]
@@ -1374,14 +1374,18 @@ node group		clk G			[*] ctrl G
       rgb		  shift dbl 3		[+]
       color attr	  shift dbl C		[+]
     ||
-    texture coordinate	  shift T C ** , shift dbl 2	[+,+]
+    texture coordinate	  shift T C , 		[+]
+			  shift dbl 2		[+]
       geometry		    shift dbl Y		[+]
       bevel		    shift dbl B		[+]
       ambient occlusion	    shift dbl Q		[+]
   texture image		  shift dbl T		[+]
-    environment tex	    shift T E ** , shift dbl Z	[+,+]
-    noise		    shift T N ** , shift Z N	[+,+]
-    voronoi		    shift T V ** , shift Z V	[+,+]
+    environment tex	    shift T E , 	[+]
+			    shift dbl Z		[+]
+    noise		    shift T N , 	[+]
+			    shift Z N		[+]
+    voronoi		    shift T V , 	[+]
+			    shift Z V		[+]
   color mods
     hsv (hue)		  shift dbl U		[+]
       rgb curves 	    shift dbl K		[+]

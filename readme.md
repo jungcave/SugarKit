@@ -11,6 +11,7 @@ v3.1 feature tools:
 - Object Viewport Alpha Toggle
 - Object Unhide All Collections But Keep Objects Hidden
 - Object Modifier Setups: Axis Bend, Radial Array
+- Mesh Quad Fill
 - Vertex Group Rename Active
 - Vertex Group Select Active (in Sculpt, Paint)
 - Vertex Group Active To Sculpt Face Set

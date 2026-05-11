@@ -63,15 +63,18 @@ def Hotkeys(isRegister):
         for kmn in ['Object Mode', 'Mesh', 'Sculpt', 'Vertex Paint', 'Weight Paint', 'Texture Paint']:
             addAddonKeymapItem(kmn, ObjectViewportAlphaToggleOperator.bl_idname,
                                'ACCENT_GRAVE Z')
+        # Objects Collections Unable Visibility
+        for kmn in ['Object Mode', 'Outliner']:
+            addAddonKeymapItem(kmn, ObjectUnhideAllCollectionsButKeepObjectsHiddenOperator.bl_idname,
+                               'H ctrl alt')
         # Object Modifier Setups
         addAddonKeymapItem('Object Mode', ObjectModifierSetupAxisBendOperator.bl_idname,
                            'LEFTMOUSE shift alt S')
         addAddonKeymapItem('Object Mode', ObjectModifierSetupRadialArrayOperator.bl_idname,
                            'LEFTMOUSE shift alt X')
-        # Objects Collections Unable Visibility
-        for kmn in ['Object Mode', 'Outliner']:
-            addAddonKeymapItem(kmn, ObjectUnhideAllCollectionsButKeepObjectsHiddenOperator.bl_idname,
-                               'H ctrl alt')
+        # Mesh Quad Fill
+        addAddonKeymapItem('Mesh', MeshQuadFillOperator.bl_idname,
+                           'Q ctrl')
         # Vertex Groups Ops
         addAddonKeymapItem('Mesh', VertexGroupRenamePanelOperator.bl_idname,
                            'R ctrl')
@@ -153,11 +156,11 @@ def Hotkeys(isRegister):
                            'Z CLICK')
         # Image/Shading Make Single Copy
         addAddonKeymapItem('Image', ImageMakeSingleCopyOperator.bl_idname,
-                           'C ctrl alt')
+                           'C alt')
         addAddonKeymapItem('Image', ImageMakeSingleCopyOperator.bl_idname,
                            'TAB Z')
         addAddonKeymapItem('Node Editor', MaterialMakeSingleCopyOperator.bl_idname,
-                           'C ctrl alt')
+                           'C alt')
         addAddonKeymapItem('Node Editor', MaterialMakeSingleCopyOperator.bl_idname,
                            'TAB Z')
         # Image/Shading Close
@@ -499,7 +502,24 @@ class ObjectModifierSetupRadialArrayOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# / Edit Tools
+# / Mesh Tools
+
+
+class MeshQuadFillOperator(bpy.types.Operator):
+    bl_label = "Mesh Quad Fill"
+    bl_idname = "mesh.xx_mesh_quad_fill"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.mode == 'EDIT_MESH'
+
+    def execute(self, context):
+        bpy.ops.mesh.edge_face_add()
+        bpy.ops.mesh.quads_convert_to_tris()
+        bpy.ops.mesh.tris_convert_to_quads(
+            shape_threshold=1.5708)  # Max Shape Angle:[90deg] \
+        return {'FINISHED'}
 
 
 # TODO: 3.2.x InterceptiveMerge (alt C)
@@ -1273,7 +1293,8 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                 solidifyMod = self.trim_curve.modifiers.new(
                     'TrimSolidify' + str(id(self.trim_curve)), 'SOLIDIFY')
                 viewport = self.view_3d_space.region_3d
-                thicknessAbs = math.ceil(viewport.view_distance * 2) * ABS_MULTI
+                thicknessAbs = math.ceil(
+                    viewport.view_distance * 2) * ABS_MULTI
                 solidifyMod.thickness = thicknessAbs
                 solidifyMod.offset = 0.0
                 # Apply mod (for active)
@@ -1875,8 +1896,11 @@ class ShadingCreateNewOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        snode = context.space_data
-        return snode.tree_type == 'ShaderNodeTree'
+        try:
+            isShading = context.space_data.tree_type == 'ShaderNodeTree'
+        except Exception as er:
+            isShading = None
+        return isShading
 
     def execute(self, context):
         snode = context.space_data
@@ -1929,8 +1953,11 @@ class ShadingSetActiveMenuOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        snode = context.space_data
-        return snode.tree_type == 'ShaderNodeTree'
+        try:
+            isShading = context.space_data.tree_type == 'ShaderNodeTree'
+        except Exception as er:
+            isShading = None
+        return isShading
 
     def invoke(self, context, event):
         yield_global_event(event)
@@ -1997,8 +2024,11 @@ class ShadingKeepFakeUserOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        snode = context.space_data
-        return snode.tree_type == 'ShaderNodeTree'
+        try:
+            isShading = context.space_data.tree_type == 'ShaderNodeTree'
+        except Exception as er:
+            isShading = None
+        return isShading
 
     def execute(self, context):
         snode = context.space_data
@@ -2050,8 +2080,11 @@ class MaterialMakeSingleCopyOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        snode = context.space_data
-        return snode.tree_type == 'ShaderNodeTree'
+        try:
+            isShading = context.space_data.tree_type == 'ShaderNodeTree'
+        except Exception as er:
+            isShading = None
+        return isShading
 
     def execute(self, context):
         snode = context.space_data
@@ -2090,8 +2123,11 @@ class ShadingCloseOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        snode = context.space_data
-        return snode.tree_type == 'ShaderNodeTree'
+        try:
+            isShading = context.space_data.tree_type == 'ShaderNodeTree'
+        except Exception as er:
+            isShading = None
+        return isShading
 
     def execute(self, context):
         snode = context.space_data
@@ -2178,7 +2214,12 @@ class ShadingRemoveConfirmMenu(bpy.types.Menu):
             act = context.active_object.active_material
         elif snode.shader_type == 'WORLD':
             act = context.scene.world
-        return snode.tree_type == 'ShaderNodeTree' and act
+
+        try:
+            isShading = context.space_data.tree_type == 'ShaderNodeTree'
+        except Exception as er:
+            isShading = None
+        return isShading and act
 
     def draw(self, context):
         layout = self.layout

@@ -458,9 +458,9 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
         add('3D View', 'view3d.cursor3d',
             'RIGHTMOUSE shift CLICK', disableOld='RIGHTMOUSE shift')
         add('3D View', 'view3d.snap_cursor_to_center',
-            'Q CLICK')
+            'Q DOUBLE_CLICK')
         add('3D View', 'view3d.snap_cursor_to_selected',
-            'Q ctrl')
+            'Q CLICK')
 
         # view
         disable('Image', 'image.view_zoom_border', 'B shift')
@@ -940,7 +940,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             'J DOUBLE_CLICK')
 
         add('Outliner', 'outliner.id_operation',
-            'C ctrl alt', setKmiProps=lambda kmi: setTypeProp(kmi, 'SINGLE'))
+            'C alt', setKmiProps=lambda kmi: setTypeProp(kmi, 'SINGLE'))
         add('Outliner', 'outliner.id_operation',
             'X alt', setKmiProps=lambda kmi: setTypeProp(kmi, 'UNLINK'))
 
@@ -1554,7 +1554,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
         add('Mesh', {'mesh.vertices_smooth': {'factor': 0.5, 'wait_for_input': False}},
             'S shift alt')
         add('Mesh', 'transform.edge_crease',
-            'SIX', disableOld='E shift')
+            'C alt', disableOld='E shift')
 
         # uv
         for kmn, v in {
@@ -1854,7 +1854,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             disable(kmn, {'wm.context_menu_enum': {
                     'data_path': 'tool_settings.' + v + '.brush.stroke_method'}}, 'E')
             add(kmn, {'wm.context_toggle_enum': {'data_path': 'tool_settings.' + v + '.brush.stroke_method'}},
-                'LEFTMOUSE alt DOUBLE_CLICK', setKmiProps=lambda kmi: setContextToggleValuesProp(kmi, 'LINE', 'SPACE'))
+                'LEFTMOUSE alt CLICK', setKmiProps=lambda kmi: setContextToggleValuesProp(kmi, 'LINE', 'SPACE'))
             add(kmn, {'wm.context_toggle_enum': {'data_path': 'tool_settings.' + v + '.brush.stroke_method'}},
                 'LEFTMOUSE shift alt CLICK', setKmiProps=lambda kmi: setContextToggleValuesProp(kmi, 'CURVE', 'SPACE'))
 
@@ -2027,7 +2027,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
         disable(
             'Sculpt', {'sculpt.face_set_change_visibility': {'mode': 0}}, 'H')
         add('Sculpt', 'paint.hide_show',
-            'H shift ctrl')
+            'B ctrl alt')
         add('Sculpt', 'sculpt.reveal_all',
             'H alt')
         add('Sculpt', 'sculpt.face_set_invert_visibility',
@@ -2264,7 +2264,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
         add('Vertex Paint', 'paint.vertex_color_set',
             'F DOUBLE_CLICK')
         add('Image Paint', {'wm.tool_set_by_id': {'name': 'builtin_brush.Clone'}},
-            'C alt')
+            'C ctrl')
 
     @classmethod
     def addImageAndUvHotkeys(cls):
@@ -2330,7 +2330,7 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
         add('UV Editor', {'uv.pin': {'clear': False}},
             'C', disableOld='P')
         add('UV Editor', {'uv.pin': {'clear': True}},
-            'C alt', disableOld='P alt')
+            'C DOUBLE_CLICK', disableOld='P alt')
         add('UV Editor', 'uv.select_pinned',
             'C shift', disableOld='P shift')
         add('UV Editor', {'uv.select_box': {'pinned': True}},
@@ -2366,11 +2366,11 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
 
         # tools
         add('UV Editor', 'uv.snap_cursor',
-            'Q CLICK', setKmiProps=lambda kmi: setTargetProp(kmi, 'ORIGIN'))
+            'Q DOUBLE_CLICK', setKmiProps=lambda kmi: setTargetProp(kmi, 'ORIGIN'))
         add('Image', 'image.view_cursor_center',
-            'Q DOUBLE_CLICK', disableOld='C shift')
+            'Q ctrl', disableOld='C shift')
         add('UV Editor', 'uv.snap_cursor',
-            'Q ctrl', setKmiProps=lambda kmi: setTargetProp(kmi, 'SELECTED'))
+            'Q CLICK', setKmiProps=lambda kmi: setTargetProp(kmi, 'SELECTED'))
         add('UV Editor', 'uv.snap_selected',
             'Q shift ctrl', setKmiProps=lambda kmi: setTargetProp(kmi, 'CURSOR'))
 
@@ -2523,13 +2523,18 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             'THREE DOUBLE_CLICK': 'ShaderNodeRGB',
             'C DOUBLE_CLICK': 'ShaderNodeVertexColor',
             'C T': 'ShaderNodeTexCoord',
+            'TWO DOUBLE_CLICK': 'ShaderNodeTexCoord',
             'Y DOUBLE_CLICK': 'ShaderNodeNewGeometry',
             'B DOUBLE_CLICK': 'ShaderNodeBevel',
             'Q DOUBLE_CLICK': 'ShaderNodeAmbientOcclusion',
             # texture
             'T DOUBLE_CLICK': 'ShaderNodeTexImage',
+            'E T': 'ShaderNodeTexEnvironment',
+            'Z DOUBLE_CLICK': 'ShaderNodeTexEnvironment',
             'N T': 'ShaderNodeTexNoise',
+            'N Z': 'ShaderNodeTexNoise',
             'V T': 'ShaderNodeTexVoronoi',
+            'V Z': 'ShaderNodeTexVoronoi',
             # color
             'U DOUBLE_CLICK': 'ShaderNodeHueSaturation',
             'K DOUBLE_CLICK': 'ShaderNodeRGBCurve',
@@ -2538,8 +2543,6 @@ class BuildSugarKeyconfigOperator(bpy.types.Operator):
             'V DOUBLE_CLICK': 'ShaderNodeMapping',
             'N DOUBLE_CLICK': 'ShaderNodeNormalMap',
             'B N': 'ShaderNodeBump',
-            # env
-            'E T': 'ShaderNodeTexEnvironment',
         }.items():
             add('Node Editor', {'node.add_node': {'use_transform': True}},
                 k + ' shift repeat', setKmiProps=lambda kmi: setTypeProp(kmi, v))
