@@ -629,23 +629,7 @@ def unableDisabledKeymapItems(keymap, disabledKeymapItemsIds):
         disabledKeymapItemsIds.clear()
 
 
-# / Area Utils
-
-
-def getSpaceUnderMouseFromContextEvent(context, event):
-    for area in context.screen.areas:
-        if isAreaUnderMousePointer(area, event.mouse_prev_x, event.mouse_prev_y):
-            return area.spaces[0]
-    return None
-
-
-def isAreaUnderMousePointer(area, x, y):
-    inX = x >= area.x and x <= area.x + area.width
-    inY = y >= area.y and y <= area.y + area.height
-    return inX and inY
-
-
-# / Modal Utils
+# / Modal/event Utils
 
 
 def eventKeyIs(event, hotkey):
@@ -671,6 +655,83 @@ def addTimerForContext(context, time=0.3):
 def removeTimerFromContext(context, timer):
     return context.window_manager.event_timer_remove(
         timer) and None if timer else None
+
+
+# / Area Utils
+
+
+def getSpaceUnderMouseFromContextEvent(context, event):
+    for area in context.screen.areas:
+        if isAreaUnderMousePointer(area, event.mouse_prev_x, event.mouse_prev_y):
+            return area.spaces[0]
+    return None
+
+
+def isAreaUnderMousePointer(area, x, y):
+    inX = x >= area.x and x <= area.x + area.width
+    inY = y >= area.y and y <= area.y + area.height
+    return inX and inY
+
+
+# / Tool Utils
+
+
+def isToolSelect(tool):
+    return tool in [
+        'builtin.select', 'builtin.select_box', 'builtin.select_circle', 'builtin.select_lasso']
+
+
+def setActiveToolInContext(tool=""):
+    if tool:
+        toolName = "builtin." + tool
+        bpy.ops.wm.tool_set_by_id(name=toolName)
+
+
+# Brush
+
+
+def getActiveBrushTextureInContext(context):
+    try:
+        if context.mode == 'SCULPT':
+            return context.tool_settings.sculpt.brush.texture
+        elif context.mode == 'PAINT_VERTEX':
+            return context.tool_settings.vertex_paint.brush.texture
+        elif context.mode == 'PAINT_WEIGHT':
+            return context.tool_settings.weight_paint.brush.texture
+        elif context.mode == 'PAINT_TEXTURE':
+            return context.tool_settings.image_paint.brush.texture
+    except Exception as er:
+        return None
+
+
+def setActiveBrushTextureImageInContext(context, image):
+    try:
+        if context.mode == 'SCULPT':
+            context.tool_settings.sculpt.brush.texture.image = image
+        elif context.mode == 'PAINT_VERTEX':
+            context.tool_settings.vertex_paint.brush.texture.image = image
+        elif context.mode == 'PAINT_WEIGHT':
+            context.tool_settings.weight_paint.brush.texture.image = image
+        elif context.mode == 'PAINT_TEXTURE':
+            context.tool_settings.image_paint.brush.texture.image = image
+    except Exception as er:
+        pass
+
+
+def getActiveBrushMaskTextureInContext(context):
+    try:
+        if context.mode == 'PAINT_TEXTURE':
+            return context.tool_settings.image_paint.brush.mask_texture
+    except Exception as er:
+        return None
+
+
+def setActiveBrushMaskTextureImageInContext(context, image):
+    try:
+        if context.mode == 'PAINT_TEXTURE':
+            context.tool_settings.image_paint.brush.mask_texture.image = image
+    except Exception as er:
+        pass
 
 
 # / Object Utils
@@ -789,7 +850,7 @@ def getObjectModeFromContext(context):
         return 'OBJECT'
 
 
-def setActiveObjectInContext(context, obj, delPrev=False, mode="", tool=""):
+def setActiveObjectInContext(context, obj, mode="", delPrev=False):
     if not obj:
         return
 
@@ -798,15 +859,12 @@ def setActiveObjectInContext(context, obj, delPrev=False, mode="", tool=""):
     else:
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.delete()
+
     obj.select_set(True)
     context.view_layer.objects.active = obj
 
     if mode:
         bpy.ops.object.mode_set(mode=mode)
-
-    if tool:
-        toolName = "builtin." + tool
-        bpy.ops.wm.tool_set_by_id(name=toolName)
 
 
 def deselectAllExceptActiveInContext(context):
@@ -911,7 +969,8 @@ def createCurveAndEditInContext(context, name="Curve", inFront=False, tool='draw
     curve.show_in_front = True if inFront else False
     context.collection.objects.link(curve)
 
-    setActiveObjectInContext(context, curve, mode='EDIT', tool=tool)
+    setActiveObjectInContext(context, curve, mode='EDIT')
+    setActiveToolInContext(tool=tool)
 
     return curve
 
@@ -964,62 +1023,7 @@ def moveObjectModifierAtTheEnd(obj, mod):
     obj.modifiers.move(modIdx, len(obj.modifiers) - 1)
 
 
-# / Tool Utils
-
-
-def isToolSelect(tool):
-    return tool in [
-        'builtin.select', 'builtin.select_box', 'builtin.select_circle', 'builtin.select_lasso']
-
-
-# Brush
-
-
-def getActiveBrushTextureInContext(context):
-    try:
-        if context.mode == 'SCULPT':
-            return context.tool_settings.sculpt.brush.texture
-        elif context.mode == 'PAINT_VERTEX':
-            return context.tool_settings.vertex_paint.brush.texture
-        elif context.mode == 'PAINT_WEIGHT':
-            return context.tool_settings.weight_paint.brush.texture
-        elif context.mode == 'PAINT_TEXTURE':
-            return context.tool_settings.image_paint.brush.texture
-    except Exception as er:
-        return None
-
-
-def setActiveBrushTextureImageInContext(context, image):
-    try:
-        if context.mode == 'SCULPT':
-            context.tool_settings.sculpt.brush.texture.image = image
-        elif context.mode == 'PAINT_VERTEX':
-            context.tool_settings.vertex_paint.brush.texture.image = image
-        elif context.mode == 'PAINT_WEIGHT':
-            context.tool_settings.weight_paint.brush.texture.image = image
-        elif context.mode == 'PAINT_TEXTURE':
-            context.tool_settings.image_paint.brush.texture.image = image
-    except Exception as er:
-        pass
-
-
-def getActiveBrushMaskTextureInContext(context):
-    try:
-        if context.mode == 'PAINT_TEXTURE':
-            return context.tool_settings.image_paint.brush.mask_texture
-    except Exception as er:
-        return None
-
-
-def setActiveBrushMaskTextureImageInContext(context, image):
-    try:
-        if context.mode == 'PAINT_TEXTURE':
-            context.tool_settings.image_paint.brush.mask_texture.image = image
-    except Exception as er:
-        pass
-
-
-# Loose Part(s)
+# Sculpt Parts
 
 
 def separateHoveredLoosePartInContext(context):

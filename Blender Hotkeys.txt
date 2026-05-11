@@ -161,7 +161,7 @@ object props
     in front (show)	Z S			[x]
     display solid/wire	ctrl , , Z ctrl		[+,x]
       *all selected	  alt
-    color		C			{n}
+    color		C			{x}
       opacity (toggle)	  9 , Z `
 
 Fix image as plane blend mode:
@@ -191,8 +191,8 @@ Fix image as plane blend mode:
 3d-cursor
   set menu	  	Q LB			[*] shift S # snap
   to pointer	  	shift clk RB		[*] shift RB
-  to origin		clk Q			[+]
-  to selected    	ctrl Q			[+]
+  to origin		clk Q		** dbl Q	[+]
+  to selected    	ctrl Q		** clk Q	[+]
 
 [view]						[-] shift B # image.view_zoom_border
   frame (selected)	clk space		[_] num . # frame selected
@@ -333,7 +333,7 @@ view
 
 hide
   *with children	shift LB
-  collection only	ctrl alt H		{n}
+  collection only	ctrl alt H		{x}
 
 select
   extend (toggle)	ctrl LB
@@ -347,7 +347,7 @@ object
   duplicate		ctrl D			[+]
   join			ctrl J , dbl J		[+,+]
   ||
-  make single (copy)	ctrl alt C		[+]
+  make single (copy)	ctrl alt C	** alt C	[+]
   delete link		alt X			[+]
 
 collection
@@ -454,7 +454,7 @@ object transform
 //
 // PROPERTIES
 
-Setup bend {n}, [v] - in setup:
+Setup bend {x}, [v] - in setup:
 - target object and add geometry
 - [v] create an empty and move it to object's pivot
 - [v] parent empty to object
@@ -512,11 +512,11 @@ Overlay plane on rounded area {TexTools}:
     lattice		  shift alt dbl L	[+]
     shrink wrap	[decal]	  shift alt S W		[+]
     simple deform [bend]  shift alt S D		[+]
-      setup bend   	    shift alt S LB	{n}
+      setup bend   	    shift alt S LB	{x}
     surf. (copy) deform	  shift alt C D		[+]
     ||
     (extrapolate) array	  shift alt dbl X	[+]
-      setup radial array    shift alt X LB	{n}
+      setup radial array    shift alt X LB	{x}
     screw		  shift alt S C		[+]
     ||
     subdiv (cycle lvl)	  shift alt dbl `-5	[*] ctrl 0-5 # subdivision
@@ -612,6 +612,10 @@ copy	  	  	ctrl C
       all [seam/mat]	  shift L , shift W	[*,+] ctrl L # select linked , select linked all
       deselect (hovered)    dbl L , alt W	[*,+] shift L # select linked [deselect]
 
+align pivot to selected				{x}
+  location		** ++ ctrl dbl shift
+  rotation		** ++ alt dbl ctrl
+
 [mesh]
   menu			clk RB			[*] RB # 3d->mesh > call menu > RB [click]
   ||
@@ -643,7 +647,7 @@ connect
     connect path (link)	shift ctrl P , shift Q	[*,+] J # vertex connect path
     make new [_] (_)   	F
       f2 		  F 			{b}
-      quad fill		  ** ++	ctrl A		{n}
+      retopo fill	  ** ++	ctrl A		{x}
     hook		shift ctrl H		[*] ctrl H
   [edge]
     bridge loop		shift ctrl B , alt F	[+,+]
@@ -661,7 +665,7 @@ divide
       to quads		  alt dbl T		[+]		
     poke faces [X] (*)	ctrl alt P , alt V	[+,+]
     intersect knife	ctrl alt K , 4		[+,+]
-      interceptive merge  ** ++ alt C		{n}
+      interceptive merge  ** ++ ctrl V		{x}
 
 combine
   [edge] 
@@ -725,7 +729,7 @@ tools/operations
   ||
   smooth [vert]		shift alt S		[+] 
   ||
-  crease [edge]		6			[*] shift E
+  crease [edge]		6	** alt C		[*] shift E
     *clear		  -1
 
 [uv]		
@@ -758,7 +762,7 @@ vertex groups
     ||
     delete group	ctrl alt G		[+]
     ||
-    rename (mesh)	ctrl R			{n}
+    rename (mesh)	ctrl R			{x}
 
 [overlays]
   retopo		ctrl alt R		[+]
@@ -773,13 +777,13 @@ Add depth:
 select
   path			ctrl LB
     for curve pen	  ctrl dbl LB		[+]
-  whole handle		shift dbl LB		{n}
+  whole handle		shift dbl LB		{x}
 
 [curve]
   curve type (convert)	shift ctrl C		[+]
     bezier		  shift ctrl B		[+] curve > set spline type > bezier
   ||
-  data	                            		{n}
+  data	                            		{x}
     depth toggle	shift T
     fill caps	  	shift F
   ||
@@ -809,7 +813,7 @@ select
   ||
   tilt			alt T			[*] ctrl T # tilt
     clear		  ctrl alt T		[*] alt T # clear tilt
-  insert (cut)		C			{ } I
+  insert (cut)		C			{a} I
 
 [tools]
   draw			alt 1			[+]
@@ -890,7 +894,7 @@ brush
   smooth (toggle)	shift ctrl clk LB  	[*] shift S # 3d->sculpt/vertex/weight/image > [wm.context_toggle] context:[tool_settings.|sculpt,vertex/weight/image_paint|.brush.use_smooth_stroke]
     radius		  R			[+]
   method					[-] E # context enum menu
-    line (toggle)	  alt dbl LB		[+]
+    line (toggle)	  alt dbl LB	** clk	[+]
       *snap		    alt
     curve (toggle)	  shift alt clk LB	[+]
 
@@ -989,7 +993,7 @@ draw mask
       visible (clear)	dbl A			[+]
       masked		alt A			[+]
       selection		alt W			[+]
-      active group  	alt G			{n} 
+      active group  	alt G			{x} 
   ||
   cover	(diagonals)	ctrl A			[*#] shift W # [sculpt.expand] falloff:[diagonals]
     *merge areas	  release ctrl
@@ -1002,13 +1006,13 @@ draw mask
   ||
   hide (hovered)	H			[*] shift H # face sets visibility [hide active]
     isolate		  shift H		[*] H # face sets visibility [toggle visibility]
-    box			  shift ctrl H		[+]
+    box			  shift ctrl H	** ctrl alt B	[+]
   unhide (all)		dbl H , alt H		[,+]
   invert		ctrl H			[+]
   ||
   extract (duplicate)	shift ctrl V		[+]
 
-sculpt parts					{n}
+sculpt parts					{x}
   loose
     separate 		ctrl clk RB
       join		  shift ctrl clk RB
@@ -1020,7 +1024,7 @@ trim/project
   line			alt X			[+]
     *snap	  	  ctrl
     *flip		  F
-    curve		  shift alt X		{n}
+    curve		  shift alt X		{x}
   lasso			ctrl X			[+]
 
 [modifiers]
@@ -1034,13 +1038,13 @@ filters
     inflate		  shift alt F		[+]
     sharpen (trim)	  shift alt T		[+]
   ||
-  symmetrize (weld)	shift alt W		{n}
+  symmetrize (weld)	shift alt W		{x}
 
 [brushes/tools]
   draw			1			[*] X # brush select
     draw sharp		  D			[+]
     crease [sharp+pinch]  alt C			[*] shift C
-    curve		  shift alt C		{n}
+    curve		  shift alt C		{x}
   clay			2			[*] C
     clay strips		  C			[+]
   inflate		I , alt F		[,+]
@@ -1101,7 +1105,7 @@ selection mask
   faces			1			[*] M # 3d->vertex/weight/image > [wm.context_toggle] context:[vertex_paint_object.data.use_paint_mask]
   vertexes		2			[*] V # 3d->vertex/weight > [wm.context_toggle] context:[vertex_paint_object.data.use_paint_mask_vertex]
   ||
-  select group		G			{n}
+  select group		G			{x}
 
 [blend]
   mode			ctrl alt clk RB		[+]
@@ -1131,7 +1135,7 @@ stencil texture
   swap			shift X			[*] X # swap colors
   reset (hovered)	alt X , backspace 	[+,] 
   ||
-  color palette		C 			{n}
+  color palette		C 			{x}
 
 [weights]
   set weight		alt W			[*] shift K
@@ -1144,7 +1148,7 @@ stencil texture
     toggle		  ctrl alt Q		[+]
   ||
   mask stencil 
-    transform uv form	ctrl Q			{n}
+    transform uv form	ctrl Q			{x}
     image invert	  alt Q
 
 [tools]
@@ -1158,9 +1162,9 @@ stencil texture
   ||
   fill			F			[+]
     vertex color	  dbl F			[*] shift K # set vertex colors
-    set gradient colors	  ctrl G		{n}
+    set gradient colors	  ctrl G		{x}
   ||
-  clone			alt C			[+]
+  clone			alt C	** ctrl C	[+]
     target (cursor)	  ctrl LB
 
 //
@@ -1191,9 +1195,9 @@ stencil texture
   open (import)		alt O , Z shift		[,+]
   new 			alt N , Z space		[,+]
   ||
-  set active		shift ctrl tab		{n}
+  set active		shift ctrl tab		{x}
     fake user (lock/zip)  K , clk Z
-    make single (copy) 	  ctrl alt C , Z tab
+    make single (copy) 	  ctrl alt C ** alt C , Z tab
     pack +save (keep)	  ctrl K , Z ctrl
       unpack		    alt K , Z alt
       all saved *pack+glob  shift ctrl space
@@ -1225,7 +1229,7 @@ stencil texture
   follow quads (rect)	shift ctrl F		[+]
   ||
   pin (clip)		C			[*] P
-    unpin		  alt C			[*] alt P # pin [v]:clear
+    unpin		  alt C		** dbl C	[*] alt P # pin [v]:clear
     select (pined only)	  shift C		[*] shift P # selected pinned
       box		    B			[*] ctrl B # box select [v]:pinned
   ||
@@ -1249,9 +1253,9 @@ stencil texture
 
 [tools]
   2d-cursor
-    to origin		clk Q			[+]
-      to center		  dbl Q			[*] shift C # image > cursor to center view
-    to selected		ctrl Q			[+]
+    to origin		clk Q	** dbl Q		[+]
+      to center		  dbl Q	** ctrl Q		[*] shift C # image > cursor to center view
+    to selected		ctrl Q	** clk Q		[+]
     move to cursor	shift ctrl Q		[+]
   brush tools
     grab		alt 1			[+]
@@ -1323,7 +1327,7 @@ Add displacement texture (silhouette):
       and sockets	  dbl T			[+]
       only sockets  	  alt T			[*] ctrl H # [node.hide_socket_toggle] 
   ||
-  node relax		alt R			{ } shift R
+  node relax		alt R			{a} shift R
     arrange [iter.: 2]	  ctrl alt A		[+]
 
 tweak select					[-] C , B
@@ -1370,14 +1374,14 @@ node group		clk G			[*] ctrl G
       rgb		  shift dbl 3		[+]
       color attr	  shift dbl C		[+]
     ||
-    texture coordinate	  shift T C		[+]
-    geometry		  shift dbl Y		[+]
-    bevel		  shift dbl B		[+]
-    ambient occlusion	  shift dbl Q		[+]
+    texture coordinate	  shift T C ** , shift dbl 2	[+,+]
+      geometry		    shift dbl Y		[+]
+      bevel		    shift dbl B		[+]
+      ambient occlusion	    shift dbl Q		[+]
   texture image		  shift dbl T		[+]
-    noise		    shift T N		[+]
-    voronoi		    shift T V		[+]
-    environment tex	    shift T E		[+]
+    environment tex	    shift T E ** , shift dbl Z	[+,+]
+    noise		    shift T N ** , shift Z N	[+,+]
+    voronoi		    shift T V ** , shift Z V	[+,+]
   color mods
     hsv (hue)		  shift dbl U		[+]
       rgb curves 	    shift dbl K		[+]
@@ -1468,26 +1472,26 @@ Addons:
     F2 (face from angle root vertex)		{b}
     LoopTools					{b}
     MeshTools					{b} 
-    Quad Swords					{ }
-    Curve Edit Tools (insert bezier point)	{ }
+    Quad Swords					{a}
+    Curve Edit Tools (insert bezier point)	{a}
     ! Bsurfaces (retopo)			{b} 
     ! PolyQuilt (retopo)			{b} 
   ||
   [sculpt]
-    Orb Brushes					{ } 
+    Orb Brushes					{a} 
   ||
   [uv]
-    TexTools					{ } 
-    UniV (quadrify, stack, border)		{ } 
-    UV Squares (to grid by shape)		{ }
+    TexTools					{a} 
+    UniV (quadrify, stack, border)		{a} 
+    UV Squares (to grid by shape)		{a}
   ||
   [texture]
-    Layer Painter (masking)			{ } 
-    ? Vertex Color Master (isolate channel)	{ } 
+    Layer Painter (masking)			{a} 
+    ? Vertex Color Master (isolate channel)	{a} 
   ||
   [shader editor]
     Node Wrangler				{b}
-    Node Relax (arrange nodes [iter.: 2]) 	{ }
+    Node Relax (arrange nodes [iter.: 2]) 	{a}
 
 ИДЕИ ДЛЯ АДДОНОВ:
 - вынести из сycles функционал для бейкинга в аддон правого меню (VisualBaker)

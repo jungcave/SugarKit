@@ -788,7 +788,6 @@ class SculptDrawCurveOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# ! TODO: finish exterior/interior
 # TODO: 3.2.x Make modal keys setable from keymap settings
 class SculptTrimCurveModalOperator(bpy.types.Operator):
     credits = [
@@ -823,11 +822,11 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
         "Undo, Redo: Ctrl+Z, Shift+Ctrl+Z",
     ])
 
-    view_3d_space = bpy.props.PointerProperty(type=bpy.types.SpaceView3D)
-    is_init_orthographic = bpy.props.BoolProperty(
-        name="is_orthographic_side_view")
-    init_workspace = bpy.props.PointerProperty(type=bpy.types.WorkSpace)
+    trim_curve_resolution: bpy.props.IntProperty(
+        name='Resolution', default=16, min=1, max=1023)
 
+    view_3d_space = bpy.props.PointerProperty(type=bpy.types.SpaceView3D)
+    init_workspace = bpy.props.PointerProperty(type=bpy.types.WorkSpace)
     target_obj = bpy.props.PointerProperty(type=bpy.types.Object)
     trim_curve = bpy.props.PointerProperty(type=bpy.types.Curve)
 
@@ -839,9 +838,9 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
     history_steps = 0
     dbl = {}
 
+    is_init_orthographic = False
     is_draw = True
     is_exterior = False
-    is_finish = False
     has_entered_in_between_tools = False
     has_chandes_header_by_submodal = False
     was_middle_pressed = False
@@ -956,19 +955,9 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                 self.has_chandes_header_by_submodal = False
 
             # / FINISH
-            if self.is_finish and not event.type == 'ESC':
-                if not glob.trim_curve_resolution:
-                    if event.value == 'RELEASE':
-                        self.is_finish = False
-                        return {'RUNNING_MODAL'}
-                    else:
-                        return {'PASS_THROUGH'}
-                else:
-                    return self.finish(self, context, glob.trim_curve_resolution)
-            elif eventKeyIs(event, 'RET') or eventKeyIs(event, 'SPACE'):
+            if eventKeyIs(event, 'RET') or eventKeyIs(event, 'SPACE'):
                 if isPen:
-                    bpy.ops.curve.xx_curve_resolution_dialog('INVOKE_DEFAULT')
-                    self.is_finish = True
+                    self.finish(self, context)
                 else:
                     setModalTextInContext(
                         context, self.HEADER_TEXT, self.STATUS_TEXT)
@@ -979,7 +968,7 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
             # / CANCEL
             elif eventKeyIs(event, 'ESC'):
                 setActiveObjectInContext(
-                    context, self.target_obj, delPrev=True, mode='SCULPT')
+                    context, self.target_obj, mode='SCULPT', delPrev=True)
                 setModalTextInContext(context, None)
                 self.mapModalKeys(self, context, False)
                 return {'CANCELLED'}
@@ -1236,75 +1225,77 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
             return {'CANCELLED'}
 
     @classmethod
-    def finish(cls, self, context, trimCurveResolution):
+    def finish(cls, self, context):
         try:
+            ABS_MULTI = 16
             # Close and convert curve to mesh
             setCurveCyclic(self.trim_curve, True)
-            self.trim_curve.data.resolution_u = trimCurveResolution
+            self.trim_curve.data.resolution_u = self.trim_curve_resolution
             bpy.ops.object.mode_set(mode="OBJECT")
             bpy.ops.object.convert(target='MESH')
-            # Center curved mesh origin and align origin to view
-            self.trim_curve.display_type = 'WIRE'
             bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='MEDIAN')
 
-            # Ensure all deselected before select target
-            bpy.ops.object.select_all(action='DESELECT')
-            setActiveObjectInContext(
-                context, self.target_obj, delPrev=False, mode='EDIT')
-            self.trim_curve.select_set(True)
-            bpy.ops.mesh.select_all(action='DESELECT')
-
-            # / Project trim
-            bpy.ops.mesh.knife_project(cut_through=True)
-            # Delete intersected part and select border
-            if self.is_exterior:
+            # / Trim
+            if not self.is_init_orthographic:
+                # Prepare camera to perspective mesh transform
+                bpy.ops.object.camera_add(align='VIEW')
+                context.scene.camera = context.active_object
+                bpy.ops.view3d.camera_to_view()
+                bpy.ops.view3d.snap_cursor_to_selected()
+                prevPivotPoint = str(
+                    context.scene.tool_settings.transform_pivot_point)
+                context.scene.tool_settings.transform_pivot_point = 'CURSOR'
+                # Fill mesh
+                setActiveObjectInContext(
+                    context, self.trim_curve, mode='EDIT', delPrev=True)
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.mesh.duplicate_move()
+                viewport = self.view_3d_space.region_3d
+                scaleAbs = math.ceil(viewport.view_distance * 2) * ABS_MULTI
+                bpy.ops.transform.resize(
+                    value=(scaleAbs, scaleAbs, scaleAbs))
                 bpy.ops.mesh.select_all(action='INVERT')
-                bpy.ops.mesh.delete(type='EDGE')
+                bpy.ops.mesh.duplicate_move()
+                digitAbs = pow(10, len(str(scaleAbs)) + 1)
+                bpy.ops.transform.resize(
+                    value=(scaleAbs/digitAbs, scaleAbs/digitAbs, scaleAbs/digitAbs))
+                context.scene.tool_settings.transform_pivot_point = prevPivotPoint
                 bpy.ops.mesh.select_all(action='SELECT')
-                bpy.ops.mesh.region_to_loop()  # select border
-                bpy.ops.mesh.hide(unselected=True)
-                # Get is cutted through by loose parts count
-                self.trim_curve.select_set(False)
-                bpy.ops.mesh.separate(type='LOOSE')
-                bpy.ops.object.mode_set(mode="OBJECT")
-                cuttedThrough = int(len(context.selected_objects)) > 1
-                bpy.ops.object.join()
-                bpy.ops.object.mode_set(mode='EDIT')
-                self.trim_curve.select_set(True)
-                bpy.ops.mesh.select_all(action='SELECT')
-            else:
-                bpy.ops.mesh.hide(unselected=True)
-                bpy.ops.mesh.region_to_loop()  # select border
-                # Get is cutted through by created faces count
-                bpy.ops.mesh.edge_face_add()
-                cuttedThrough = int(
-                    len(getSelectedFacesOfObject(self.target_obj))) > 1
-                bpy.ops.mesh.delete(type='FACE')
-                bpy.ops.mesh.select_all(action='SELECT')
-                bpy.ops.mesh.region_to_loop()  # select border
-                bpy.ops.mesh.select_all(action='INVERT')
-                bpy.ops.mesh.delete(type='EDGE')
-                bpy.ops.mesh.select_all(action='SELECT')
-                bpy.ops.mesh.reveal(select=False)
-            # Close mesh (fill/bridge)
-            if not cuttedThrough:
-                bpy.ops.mesh.edge_face_add()
-            else:
-                if not self.is_exterior:
-                    bpy.ops.mesh.hide(unselected=True)
-                    bpy.ops.mesh.delete(type='FACE')
-                    bpy.ops.mesh.select_all(action='SELECT')
                 bpy.ops.mesh.bridge_edge_loops()
-            if not self.is_exterior:
-                # Repeat cut to preserve form
-                bpy.ops.mesh.knife_project(cut_through=True)
-            bpy.ops.mesh.select_all(action='SELECT')
-            bpy.ops.mesh.reveal(select=False)
-
-            # Restore mode
-            bpy.ops.object.mode_set(mode='SCULPT')
+                bpy.ops.mesh.region_to_loop()
+                bpy.ops.mesh.edge_face_add()
+            else:
+                # Fill mesh
+                bpy.ops.object.editmode_toggle()  # EDIT
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.mesh.edge_face_add()
+                bpy.ops.object.editmode_toggle()  # OBJECT
+                solidifyMod = self.trim_curve.modifiers.new(
+                    'TrimSolidify' + str(id(self.trim_curve)), 'SOLIDIFY')
+                viewport = self.view_3d_space.region_3d
+                thicknessAbs = math.ceil(viewport.view_distance * 2) * ABS_MULTI
+                solidifyMod.thickness = thicknessAbs
+                solidifyMod.offset = 0.0
+                # Apply mod (for active)
+                bpy.ops.object.modifier_apply(
+                    modifier=solidifyMod.name)
+            # Boolean opration
+            setActiveObjectInContext(context, self.target_obj, mode='OBJECT')
+            boolMod = self.target_obj.modifiers.new(
+                'TrimBool' + str(id(self.target_obj)), 'BOOLEAN')
+            moveObjectModifierAtTheEnd(self.target_obj, boolMod)
+            boolMod.operation = 'DIFFERENCE' if not self.is_exterior else 'INTERSECT'
+            boolMod.object = self.trim_curve
+            boolMod.use_hole_tolerant = True
+            # Apply mod (for active)
+            bpy.ops.object.modifier_apply(
+                modifier=boolMod.name)
 
             # Restore context
+            setActiveObjectInContext(context, self.trim_curve)
+            # self.trim_curve.display_type = 'WIRE'
+            setActiveObjectInContext(
+                context, self.target_obj, mode='SCULPT', delPrev=True)
             setModalTextInContext(context, None)
             self.mapModalKeys(self, context, False)
             return {'FINISHED'}
@@ -1371,29 +1362,6 @@ def SubscribeWorkSpace(isRegister=True):
         bpy.app.handlers.load_post.append(resubscribeWorkSpace)
     else:
         unsubscribeWorkSpace()
-
-
-glob.trim_curve_resolution = 0
-
-
-class SculptTrimCurveResolutionDialogOperator(bpy.types.Operator):
-    bl_label = "Set Trim Curve"
-    bl_idname = "curve.xx_curve_resolution_dialog"
-
-    # use colon for display prop in dialog
-    resolution: bpy.props.IntProperty(
-        name='Resolution', default=16, min=1, max=2047)
-
-    def invoke(self, context, event):
-        global glob
-        glob.trim_curve_resolution = 0
-        # required for dialog
-        return context.window_manager.invoke_props_dialog(self, width=150)
-
-    def execute(self, context):
-        global glob
-        glob.trim_curve_resolution = self.resolution
-        return {'FINISHED'}
 
 
 class SculptSymmetrizeWeldPanelOperator(bpy.types.Operator):
