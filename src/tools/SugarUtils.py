@@ -874,24 +874,28 @@ def deselectAllExceptActiveInContext(context):
 
 
 def rayCastInContextEvent(context, event):
-    # Get the area and region
+    credits = [
+        "https://devtalk.blender.org/t/pick-material-under-mouse-cursor/6978/7",
+        "https://blender.stackexchange.com/a/192812/179841"
+    ]
+
+    # Get the context arguments
     scene = context.scene
     region = context.region
     rv3d = context.region_data
     coord = event.mouse_region_x, event.mouse_region_y
-
-    # Get the ray from the camera to the mouse
     depsgraph = context.evaluated_depsgraph_get()
-    rayOrigin = bpy_extras.view3d_utils.region_2d_to_origin_3d(
+
+    # Get the ray from the viewport and mouse
+    view_vector = bpy_extras.view3d_utils.region_2d_to_vector_3d(
         region, rv3d, coord)
-    viewVector = bpy_extras.view3d_utils.region_2d_to_vector_3d(
+    ray_origin = bpy_extras.view3d_utils.region_2d_to_origin_3d(
         region, rv3d, coord)
 
-    # Run the raycast
-    hit, location, normal, polygonIdx, obj, matrix = scene.ray_cast(
-        depsgraph, rayOrigin, viewVector)
+    wasCasted, location, normal, castedPolyIdx, castedObj, matrix = scene.ray_cast(
+        depsgraph, ray_origin, view_vector)
 
-    return hit, location, normal, polygonIdx, obj, matrix
+    return wasCasted, location, normal, castedPolyIdx, castedObj, matrix
 
 
 def selectObjectUnderMouseFromContextEvent(context, event):
@@ -931,8 +935,14 @@ def selectFaceUnderMouseFromContextEvent(context, event, onlyVisible=True):
 # Mesh
 
 
-def getActiveMeshFromContext(context):
-    return bmesh.from_edit_mesh(context.active_object.data)
+def getSelectedVerticesOfObject(obj):
+    bpy.ops.object.editmode_toggle()
+    bpy.ops.object.editmode_toggle()
+    return list(filter(lambda v: v.select, obj.data.vertices))
+
+
+def getMeshFromObject(obj):
+    return bmesh.from_edit_mesh(obj.data)
 
 
 def getSelectedFacesOfMesh(mesh):
@@ -943,20 +953,10 @@ def getSelectedFacesOfMesh(mesh):
     return selectedFaces
 
 
-def isAllFacesSelectedInContext(context):
-    mesh = getActiveMeshFromContext(context)
+def areAllFacesSelectedInObject(obj):
+    mesh = getMeshFromObject(obj)
     selectedFaces = getSelectedFacesOfMesh(mesh)
     return len(selectedFaces) == len(mesh.faces)
-
-
-def getSelectedFacesOfObject(obj):
-    me = obj.data
-    bm = bmesh.from_edit_mesh(me)
-    list = [f for f in bm.faces if f.select]
-
-    bmesh.update_edit_mesh(me)
-
-    return list
 
 
 # Curve
@@ -1021,50 +1021,6 @@ def moveObjectModifierAtTheEnd(obj, mod):
     if modIdx == -1 or modIdx == len(obj.modifiers) - 1:
         return
     obj.modifiers.move(modIdx, len(obj.modifiers) - 1)
-
-
-# Sculpt Parts
-
-
-def separateHoveredLoosePartInContext(context):
-    bpy.ops.object.editmode_toggle()
-    bpy.ops.mesh.select_linked(delimit={'NORMAL'})
-
-    # Show hovered loose part with hidden part
-    bpy.ops.mesh.reveal(select=True)
-    bpy.ops.mesh.hide(unselected=True)
-    obj = context.active_object
-    polygonIdx = obj.data.polygons.active
-    bpy.ops.mesh.select_all(action='DESELECT')
-    bpy.ops.object.mode_set(
-        mode='OBJECT')  # polygon.select works only in object mode \
-    obj.data.polygons[polygonIdx].select = True
-
-    # Select hovered loose part and separate it
-    bpy.ops.object.editmode_toggle()
-    bpy.ops.mesh.select_linked(delimit={'NORMAL'})
-    if isAllFacesSelectedInContext(context):
-        bpy.ops.sculpt.sculptmode_toggle()
-        return False
-    bpy.ops.mesh.separate(type='SELECTED')
-
-    # Hide hidden back
-    bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.mesh.reveal(select=False)
-    bpy.ops.mesh.hide(unselected=False)
-
-    # Reset pivot to geometry to separated
-    bpy.ops.object.mode_set(mode='OBJECT')
-    for i, obj in enumerate(context.selected_objects):
-        if obj != context.active_object:
-            context.view_layer.objects.active = obj
-            bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='MEDIAN')
-        else:
-            activeIdx = i
-    context.view_layer.objects.active = context.selected_objects[activeIdx]
-
-    deselectAllExceptActiveInContext(context)
-    bpy.ops.sculpt.sculptmode_toggle()
 
 
 # / UV Utils

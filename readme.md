@@ -26,7 +26,7 @@ v3.1 feature tools:
 - Sculpt Parts: Separate, Join, Remesh
 - Paint Gradient Settings
 - Paint Color Palette
-- Paint Mask Transform, Invert
+- Paint Mask Invert
 - Image/All Pack, Image Unpack
 - Image/Shading Create New
 - Image/Shading Set Active

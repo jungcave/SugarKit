@@ -10,30 +10,11 @@ def Props(isRegister):
     def handleActiveVertGroupNameUpdate(self, context):
         self.vertex_groups.active.name = self.xx_active_vert_group_name
 
-    def handleActiveBrushTextureImageUpdate(self, context):
-        setActiveBrushTextureImageInContext(
-            context, self.xx_active_brush_texture_image)
-
-    def handleActiveBrushMaskTextureImageUpdate(self, context):
-        setActiveBrushMaskTextureImageInContext(
-            context, self.xx_active_brush_mask_texture_image)
-
     if isRegister:
         bpy.types.Object.xx_active_vert_group_name = bpy.props.StringProperty(
             name="", update=handleActiveVertGroupNameUpdate)
-        bpy.types.Scene.xx_active_brush_texture_image = bpy.props.PointerProperty(
-            name="", type=bpy.types.Image, update=handleActiveBrushTextureImageUpdate)
-        bpy.types.Scene.xx_active_brush_mask_texture_image = bpy.props.PointerProperty(
-            name="", type=bpy.types.Image, update=handleActiveBrushMaskTextureImageUpdate)
-
-        bpy.types.Object.xx_paint_mask_uv_transform = bpy.props.PointerProperty(
-            type=PaintMaskUvTransformProps)
     else:
         del bpy.types.Object.xx_active_vert_group_name
-        del bpy.types.Scene.xx_active_brush_texture_image
-        del bpy.types.Scene.xx_active_brush_mask_texture_image
-
-        del bpy.types.Object.xx_paint_mask_uv_transform
 
 
 def Menus(isRegister):
@@ -106,13 +87,13 @@ def Hotkeys(isRegister):
         # Sculpt Symmetrize Weld
         addAddonKeymapItem('Sculpt', SculptSymmetrizeWeldPanelOperator.bl_idname,
                            'W shift alt')
-        # Sculpt Hovered Face Set
+        # Sculpt Parts
         addAddonKeymapItem('Sculpt', SculptHoveredLoosePartSeparateOperator.bl_idname,
                            'RIGHTMOUSE ctrl CLICK')
         addAddonKeymapItem('Sculpt', SculptHoveredObjectJoinOperator.bl_idname,
                            'RIGHTMOUSE shift ctrl CLICK')
         addAddonKeymapItem('Sculpt', SculptRemeshByLoosePartsOperator.bl_idname,
-                           'R ctrl alt')
+                           'R shift ctrl')
         # Paint Gradient Settings
         for km in ['Vertex Paint', 'Image Paint']:
             addAddonKeymapItem(km, PaintGradientSettingsPanelOperator.bl_idname,
@@ -122,8 +103,6 @@ def Hotkeys(isRegister):
             addAddonKeymapItem(km, PaintColorPalettePanelOperator.bl_idname,
                                'C')
         # Paint Mask
-        addAddonKeymapItem('Image Paint', PaintMaskUvTransformPanelOperator.bl_idname,
-                           'Q ctrl')
         addAddonKeymapItem('Image Paint', PaintMaskImageInvertOperator.bl_idname,
                            'Q alt')
         # Pack Image/All, Unpack Image
@@ -212,6 +191,7 @@ def yield_global_event(event=None):
 # / Object Tools
 
 
+# TODO: 3.2.x If initially context.scene.tool_settings.unified_paint_settings.use_unified_color=False, set True and set False again after SubscribeBrushColor is finished \
 class ObjectViewportColorSetPanelOperator(bpy.types.Operator):
     # This operator inits values for ObjectViewportColorSetPanel
     """Set object's active material viewport display color."""
@@ -268,7 +248,7 @@ class ObjectViewportColorSetPanel(bpy.types.Panel):
     bl_space_type = 'TOPBAR'  # requered panel dummy
     bl_region_type = 'HEADER'  # requered panel dummy
     bl_label = "Set Viewport Color"
-    bl_idname = "sk_active_material_viewport_color_panel"
+    bl_idname = "xx_active_material_viewport_color_panel"
     bl_ui_units_x = 10  # width
 
     def draw(self, context):
@@ -518,7 +498,7 @@ class MeshQuadFillOperator(bpy.types.Operator):
         bpy.ops.mesh.edge_face_add()
         bpy.ops.mesh.quads_convert_to_tris()
         bpy.ops.mesh.tris_convert_to_quads(
-            shape_threshold=1.5708)  # Max Shape Angle:[90deg] \
+            face_threshold=1.5708,  shape_threshold=1.5708)  # Face/Shape Angle:[90deg] \
         return {'FINISHED'}
 
 
@@ -584,7 +564,7 @@ class VertexGroupRenamePanel(bpy.types.Panel):
             target = context.active_object
             if target:
                 row = row_with_icon(self.layout, 'MESH_DATA')
-                row.prop(target, "sk_active_vert_group_name", text="")
+                row.prop(target, "xx_active_vert_group_name", text="")
                 found = True
 
         if not found:
@@ -615,7 +595,7 @@ class VertexGroupSelectPanel(bpy.types.Panel):
     bl_space_type = 'TOPBAR'  # requered panel dummy
     bl_region_type = 'HEADER'  # requered panel dummy
     bl_label = "Active Vertex Group"
-    bl_idname = "sk_vertex_group_select"
+    bl_idname = "xx_vertex_group_select"
     bl_ui_units_x = 8  # width
 
     def draw(self, context):
@@ -735,7 +715,7 @@ class CurveSelectEndpointsMenuOperator(bpy.types.Operator):
 
 class CurveSelectEndpointsMenu(bpy.types.Menu):
     bl_label = "Select Endpoints"
-    bl_idname = "sk_curve_select_endpoints_menu"
+    bl_idname = "xx_curve_select_endpoints_menu"
 
     def draw(self, context):
         layout = self.layout
@@ -808,6 +788,7 @@ class SculptDrawCurveOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
+# TODO: 3.2.x Make TRIM_CURVE_RESOLUTION setable as modal option
 # TODO: 3.2.x Make modal keys setable from keymap settings
 class SculptTrimCurveModalOperator(bpy.types.Operator):
     credits = [
@@ -836,14 +817,11 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
         "Delete: Alt+LM |",
         "Move, Scale, Rotate: RM, Shift+RM, Alt+RM |",
         "All, Invert: A, Alt+A |",
-        "Vector, Auto, Toggle: 1, 2, Dbl+Alt/LM |",
+        "Vector/Auto, Toggle: shift 1/2, Dbl+Alt/LM |",
         "Recalc: Ctrl+R |",
         "Smooth: Shift+Alt+S |",
         "Undo, Redo: Ctrl+Z, Shift+Ctrl+Z",
     ])
-
-    trim_curve_resolution: bpy.props.IntProperty(
-        name='Resolution', default=16, min=1, max=1023)
 
     view_3d_space = bpy.props.PointerProperty(type=bpy.types.SpaceView3D)
     init_workspace = bpy.props.PointerProperty(type=bpy.types.WorkSpace)
@@ -1060,14 +1038,6 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                 self.history_steps += 1
                 return {'PASS_THROUGH'}
 
-            # Navigation fix
-            elif eventKeyIs(event, 'MIDDLEMOUSE shift') or eventKeyIs(event, 'MIDDLEMOUSE ctrl') or self.was_middle_pressed:
-                self.was_middle_pressed = True if event.value in [
-                    'PRESS', 'CLICK_DRAG'] else False
-                return {'PASS_THROUGH'}
-            elif eventKeyIs(event, 'TRACKPADPAN shift NOTHING') or eventKeyIs(event, 'TRACKPADPAN ctrl NOTHING'):
-                return {'PASS_THROUGH'}
-
             # / RUN OPS
             # Toggle Interior/exterior
             elif isPen and eventKeyIs(event, 'T'):
@@ -1161,11 +1131,11 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                 return {'RUNNING_MODAL'}
 
             # Vector, Auto, Toggle
-            elif isPen and eventKeyIs(event, 'ONE'):
+            elif isPen and eventKeyIs(event, 'ONE shift'):
                 bpy.ops.curve.handle_type_set(type='VECTOR')
                 self.history_steps += 1
                 return {'RUNNING_MODAL'}
-            elif isPen and eventKeyIs(event, 'TWO'):
+            elif isPen and eventKeyIs(event, 'TWO shift'):
                 bpy.ops.curve.handle_type_set(type='AUTOMATIC')
                 self.history_steps += 1
                 return {'RUNNING_MODAL'}
@@ -1226,9 +1196,9 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                     bpy.ops.wm.tool_set_by_id(name='builtin.pen')
                 self.has_entered_in_between_tools = True
                 return {'RUNNING_MODAL'}
-            # Block viewport rotation
+            # Block viewport navigation
             elif (
-                event.type in ['MOUSEROTATE', 'MIDDLEMOUSE', 'TRACKPADPAN'] or
+                event.type in ['MOUSEROTATE', 'MIDDLEMOUSE', 'TRACKPADPAN', 'TRACKPADZOOM'] or
                 event.value in ['PRESS', 'RELEASE', 'CLICK']
             ):
                 # Fixes ortograthic view bug
@@ -1247,10 +1217,11 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
     @classmethod
     def finish(cls, self, context):
         try:
-            ABS_MULTI = 16
+            TRIM_CURVE_RESOLUTION = 16
+
             # Close and convert curve to mesh
             setCurveCyclic(self.trim_curve, True)
-            self.trim_curve.data.resolution_u = self.trim_curve_resolution
+            self.trim_curve.data.resolution_u = TRIM_CURVE_RESOLUTION
             bpy.ops.object.mode_set(mode="OBJECT")
             bpy.ops.object.convert(target='MESH')
             bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='MEDIAN')
@@ -1271,7 +1242,8 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                 bpy.ops.mesh.select_all(action='SELECT')
                 bpy.ops.mesh.duplicate_move()
                 viewport = self.view_3d_space.region_3d
-                scaleAbs = math.ceil(viewport.view_distance * 2) * ABS_MULTI
+                scaleAbs = math.ceil(viewport.view_distance * 2) * \
+                    20  # VIEW_DISTANCE * BOTH_SIDES * BIG_NUMBER_TO_SURE_COVER_WHOLE_MESH \
                 bpy.ops.transform.resize(
                     value=(scaleAbs, scaleAbs, scaleAbs))
                 bpy.ops.mesh.select_all(action='INVERT')
@@ -1294,7 +1266,7 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                     'TrimSolidify' + str(id(self.trim_curve)), 'SOLIDIFY')
                 viewport = self.view_3d_space.region_3d
                 thicknessAbs = math.ceil(
-                    viewport.view_distance * 2) * ABS_MULTI
+                    viewport.view_distance * 2) * 20  # VIEW_DISTANCE * BOTH_SIDES * BIG_NUMBER_TO_SURE_COVER_WHOLE_MESH \
                 solidifyMod.thickness = thicknessAbs
                 solidifyMod.offset = 0.0
                 # Apply mod (for active)
@@ -1311,7 +1283,6 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
             # Apply mod (for active)
             bpy.ops.object.modifier_apply(
                 modifier=boolMod.name)
-
             # Restore context
             setActiveObjectInContext(context, self.trim_curve)
             # self.trim_curve.display_type = 'WIRE'
@@ -1319,6 +1290,7 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                 context, self.target_obj, mode='SCULPT', delPrev=True)
             setModalTextInContext(context, None)
             self.mapModalKeys(self, context, False)
+
             return {'FINISHED'}
 
         except Exception as er:
@@ -1400,7 +1372,7 @@ class SculptSymmetrizeWeldPanel(bpy.types.Panel):
     bl_space_type = 'TOPBAR'  # requered panel dummy
     bl_region_type = 'HEADER'  # requered panel dummy
     bl_label = "Symmetrize Weld"
-    bl_idname = "sk_sculpt_symmetrize_weld_panel"
+    bl_idname = "xx_sculpt_symmetrize_weld_panel"
 
     def draw(self, context):
         layout = self.layout
@@ -1421,6 +1393,10 @@ class SculptHoveredLoosePartSeparateOperator(bpy.types.Operator):
 
     event = {}
 
+    @classmethod
+    def poll(cls, context):
+        return context.active_object and context.active_object.data
+
     def invoke(self, context, event):
         self.event = yield_global_event(event)
         return self.execute(context)
@@ -1436,7 +1412,46 @@ class SculptHoveredLoosePartSeparateOperator(bpy.types.Operator):
             bpy.ops.sculpt.sculptmode_toggle()
             return {'FINISHED'}
 
-        separateHoveredLoosePartInContext(context)
+        # / Seprarate Hovered Loose Parts
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.mesh.select_linked(delimit={'NORMAL'})
+        # Show hovered loose part with hidden part
+        bpy.ops.mesh.reveal(select=True)
+        bpy.ops.mesh.hide(unselected=True)
+        obj = context.active_object
+        polygonIdx = obj.data.polygons.active
+        bpy.ops.mesh.select_all(action='DESELECT')
+        bpy.ops.object.mode_set(
+            mode='OBJECT')  # polygon.select works only in object mode \
+        obj.data.polygons[polygonIdx].select = True
+        # Select hovered loose part and separate it
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.mesh.select_linked(delimit={'NORMAL'})
+        if not len(getSelectedVerticesOfObject(context.active_object)):
+            bpy.ops.mesh.reveal(select=True)
+            bpy.ops.sculpt.sculptmode_toggle()
+            return {'FINISHED'}
+        if areAllFacesSelectedInObject(context.active_object):
+            bpy.ops.sculpt.sculptmode_toggle()
+            return {'FINISHED'}
+        bpy.ops.mesh.separate(type='SELECTED')
+        # Hide hidden back
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.reveal(select=False)
+        bpy.ops.mesh.hide(unselected=False)
+        # Reset pivot to geometry to separated
+        bpy.ops.object.mode_set(mode='OBJECT')
+        for i, obj in enumerate(context.selected_objects):
+            if obj != context.active_object:
+                context.view_layer.objects.active = obj
+                bpy.ops.object.origin_set(
+                    type='ORIGIN_GEOMETRY', center='MEDIAN')
+            else:
+                activeIdx = i
+        context.view_layer.objects.active = context.selected_objects[activeIdx]
+        # Restore mode
+        deselectAllExceptActiveInContext(context)
+        bpy.ops.sculpt.sculptmode_toggle()
 
         return {'FINISHED'}
 
@@ -1529,7 +1544,7 @@ class PaintGradientSettingsPanel(bpy.types.Panel):
     bl_space_type = 'TOPBAR'  # requered panel dummy
     bl_region_type = 'HEADER'  # requered panel dummy
     bl_label = "Gradient"
-    bl_idname = "sk_paint_gradient_panel"
+    bl_idname = "xx_paint_gradient_panel"
 
     @classmethod
     def prop_unified(
@@ -1606,7 +1621,7 @@ class PaintColorPalettePanel(bpy.types.Panel):
     bl_space_type = 'TOPBAR'  # requered panel dummy
     bl_region_type = 'HEADER'  # requered panel dummy
     bl_label = "Color Palette"
-    bl_idname = "sk_paint_color_palette_panel"
+    bl_idname = "xx_paint_color_palette_panel"
     bl_ui_units_x = 10  # width
 
     def draw(self, context):
@@ -1628,198 +1643,6 @@ class PaintColorPalettePanel(bpy.types.Panel):
 
             if paint.palette:
                 layout.template_palette(paint, "palette", color=True)
-
-
-DIV = 100
-
-
-# ! TODO: add condition that object must be unwrapped (has at least one uv)
-# TODO: 3.2.x Complete resetTransformation()
-class PaintMaskUvTransformProps(bpy.types.PropertyGroup):
-    angle: bpy.props.FloatProperty(name="Angle", default=0,  min=-180, max=180,
-                                   update=lambda self, context: self.updateProp(
-                                       self, context, 'angle'))
-    offset_x: bpy.props.FloatProperty(name="Offset X", default=0, min=-DIV, max=DIV,
-                                      update=lambda self, context: self.updateProp(
-                                          self, context, 'offset_x'))
-    offset_y: bpy.props.FloatProperty(name="Offset Y", default=0, min=-DIV, max=DIV,
-                                      update=lambda self, context: self.updateProp(
-                                          self, context, 'offset_y'))
-    scale_x: bpy.props.IntProperty(name="Scale X", default=DIV, min=1, max=2*DIV,
-                                   update=lambda self, context: self.updateProp(
-                                       self, context, 'scale_x'))
-    scale_y: bpy.props.IntProperty(name="Scale Y", default=DIV, min=1, max=2*DIV,
-                                   update=lambda self, context: self.updateProp(
-                                       self, context, 'scale_y'))
-    scale_both: bpy.props.BoolProperty(default=True,
-                                       update=lambda self, context: self.updateScaleBoth(
-                                           self, context))
-    scale_xy: bpy.props.IntProperty(name="Scale", default=DIV, min=1, max=2*DIV,
-                                    update=lambda self, context: self.updateScale(
-                                        self, context))
-    do_transformation_reset: bpy.props.BoolProperty(name='Reset All',
-                                                    update=lambda self, context: self.resetTransformation(self, context))
-
-    prev_uv_rotation_angle: bpy.props.FloatProperty(name='', default=0)
-    prev_uv_translation_x: bpy.props.FloatProperty(name='', default=0)
-    prev_uv_translation_y: bpy.props.FloatProperty(name='', default=0)
-    prev_uv_scale_x: bpy.props.IntProperty(name='', default=DIV)
-    prev_uv_scale_y: bpy.props.IntProperty(name='', default=DIV)
-
-    # Get prop: context.active_object.xx_paint_mask_uv_transform
-    # Set prop: bpy.types.Object.xx_paint_mask_uv_transform
-
-    @classmethod
-    def updateProp(cls, self, context, propname, propvalue=None):
-        global glob
-
-        try:
-            actObjData = context.active_object.data
-        except Exception as er:
-            actObjData = None
-        try:
-            stencilUv = context.active_object.data.uv_layer_stencil
-        except Exception as er:
-            stencilUv = None
-
-        if not actObjData or not stencilUv:
-            return
-
-        origin_x = 0.5 + self.prev_uv_translation_x/DIV
-        origin_y = 0.5 + self.prev_uv_translation_y/DIV
-        scale_x = self.scale_x if not propvalue else propvalue
-        scale_y = self.scale_y if not propvalue else propvalue
-        SCALE_MULTIPLIER = 4  # the more the scale multiplier, the more possible scale range (min = 1) \
-        INCREASE_PROPORTION = 1 + SCALE_MULTIPLIER/DIV
-        DECREASE_PROPORTION = 1 - SCALE_MULTIPLIER/(DIV + 1)
-
-        # Angle
-        if propname == 'angle':
-            angle = self.angle - self.prev_uv_rotation_angle
-            rotateUv = createUvTransformer(
-                math.radians(angle), (origin_x, origin_y))
-
-            for v in actObjData.loops:
-                stencilUv.data[v.index].uv = rotateUv(
-                    stencilUv.data[v.index].uv)
-
-            self.prev_uv_rotation_angle = self.angle
-        # Offset
-        elif propname == 'offset_x':
-            offsetX = -1*(self.offset_x - self.prev_uv_translation_x)/DIV
-            translateUv = createUvTransformer(
-                0, (0.5, 0.5), (offsetX, 0))
-
-            for v in actObjData.loops:
-                stencilUv.data[v.index].uv = translateUv(
-                    stencilUv.data[v.index].uv)
-
-            self.prev_uv_translation_x = self.offset_x
-        elif propname == 'offset_y':
-            offsetY = -1*(self.offset_y - self.prev_uv_translation_y)/DIV
-            translateUv = createUvTransformer(
-                0, (0.5, 0.5), (0, offsetY))
-
-            for v in actObjData.loops:
-                stencilUv.data[v.index].uv = translateUv(
-                    stencilUv.data[v.index].uv)
-
-            self.prev_uv_translation_y = self.offset_y
-        # Scale
-        elif propname == 'scale_x':
-            diffX = scale_x - self.prev_uv_scale_x
-            scaleX = DECREASE_PROPORTION if diffX > 0 else INCREASE_PROPORTION
-            scaleUv = createUvTransformer(
-                0, (origin_x, origin_y), (0, 0), (scaleX, 1))
-
-            for _ in range(abs(diffX)):
-                for v in actObjData.loops:
-                    stencilUv.data[v.index].uv = scaleUv(
-                        stencilUv.data[v.index].uv)
-
-            self.prev_uv_scale_x = scale_x
-        elif propname == 'scale_y':
-            diffY = scale_y - self.prev_uv_scale_y
-            scaleY = DECREASE_PROPORTION if diffY > 0 else INCREASE_PROPORTION
-            scaleUv = createUvTransformer(
-                0, (origin_x, origin_y), (0, 0), (1, scaleY))
-
-            for _ in range(abs(diffY)):
-                for v in actObjData.loops:
-                    stencilUv.data[v.index].uv = scaleUv(
-                        stencilUv.data[v.index].uv)
-
-            self.prev_uv_scale_y = scale_y
-
-    @classmethod
-    def updateScaleBoth(cls, self, context):
-        if not self.scale_both:
-            self.scale_x = self.scale_xy
-            self.scale_y = self.scale_xy
-        else:
-            self.scale_xy = DIV
-
-    @classmethod
-    def updateScale(cls, self, context):
-        self.updateProp(self, context, 'scale_x', self.scale_xy)
-        self.updateProp(self, context, 'scale_y', self.scale_xy)
-
-    @classmethod
-    def resetTransformation(cls, self, context):
-        C()
-
-
-class PaintMaskUvTransformPanelOperator(bpy.types.Operator):
-    bl_label = "Paint Mask Transform Form Panel"
-    bl_idname = "paint.xx_paint_mask_uv_transform_panel"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        try:
-            hasStencilImage = context.tool_settings.image_paint.stencil_image
-        except Exception as er:
-            hasStencilImage = None
-
-        if not hasStencilImage:
-            self.report({'INFO'}, "Mask stencil image hasn't been set!")
-            return {'FINISHED'}
-
-        bpy.ops.wm.call_panel(
-            name=PaintMaskUvTransformPanel.bl_idname)
-        return {'FINISHED'}
-
-
-class PaintMaskUvTransformPanel(bpy.types.Panel):
-    bl_space_type = 'TOPBAR'  # requered panel dummy
-    bl_region_type = 'HEADER'  # requered panel dummy
-    bl_label = "Stencil Mask Transform"
-    bl_idname = "sk_paint_mask_uv_transform_panel"
-    bl_ui_units_x = 20  # width
-
-    def draw(self, context):
-        layout = self.layout
-        props = context.active_object.xx_paint_mask_uv_transform
-
-        layout.prop(props, "angle", slider=True)
-        layout.prop(props, "offset_x", slider=True)
-        layout.prop(props, "offset_y", slider=True)
-
-        split = layout.split(factor=0.9)
-        col1 = split.column()
-        scaleRow = col1.row(align=True)
-        col2 = split.column()
-
-        if not props.scale_both:
-            scaleRow.prop(props, "scale_x", slider=True)
-            scaleRow.prop(props, "scale_y", slider=True)
-            col2.prop(props, "scale_both", toggle=True,
-                      icon="ORIENTATION_VIEW", text="")
-        else:
-            scaleRow.prop(props, "scale_xy", slider=True)
-            col2.prop(props, "scale_both", toggle=True,
-                      icon="ORIENTATION_VIEW", text="")
-
-        # layout.prop(props, "do_transformation_reset")
 
 
 class PaintMaskImageInvertOperator(bpy.types.Operator):
@@ -1846,6 +1669,7 @@ class PaintMaskImageInvertOperator(bpy.types.Operator):
 
 
 # / Image/Shading Tools (Resources)
+
 
 # Pack
 
@@ -1936,7 +1760,7 @@ class ImageSetActiveMenuOperator(bpy.types.Operator):
 
 class ImageSetActiveMenu(bpy.types.Menu):
     bl_label = "Set Active"
-    bl_idname = "sk_image_set_active_menu"
+    bl_idname = "xx_image_set_active_menu"
 
     def draw(self, context):
         global glob
@@ -1970,7 +1794,7 @@ class ShadingSetActiveMenuOperator(bpy.types.Operator):
 
 class ShadingSetActiveMenu(bpy.types.Menu):
     bl_label = "Set Active"
-    bl_idname = "sk_shader_set_active_menu"
+    bl_idname = "xx_shader_set_active_menu"
 
     def draw(self, context):
         global glob
@@ -2160,7 +1984,7 @@ class ImageRemoveOperator(bpy.types.Operator):
 
 class ImageRemoveConfirmMenu(bpy.types.Menu):
     bl_label = "OK?"
-    bl_idname = "sk_image_remove_confirm_menu"
+    bl_idname = "xx_image_remove_confirm_menu"
 
     def draw(self, context):
         layout = self.layout
@@ -2205,7 +2029,7 @@ class ShadingRemoveOperator(bpy.types.Operator):
 
 class ShadingRemoveConfirmMenu(bpy.types.Menu):
     bl_label = "OK?"
-    bl_idname = "sk_shader_remove_confirm_menu"
+    bl_idname = "xx_shader_remove_confirm_menu"
 
     @classmethod
     def poll(cls, context):
