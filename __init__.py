@@ -9,7 +9,7 @@ bl_info = {
     "name": "Sugar Kit",
     "category": "Misc",
     "description": "QoL features.",
-    "author": "jungx xx",
+    "author": "xx",
     "version": (3, 1, 2),  # major version equals target Blender version
     "blender": (3, 6, 0),
 }

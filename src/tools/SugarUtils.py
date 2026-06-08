@@ -936,8 +936,8 @@ def selectFaceUnderMouseFromContextEvent(context, event, onlyVisible=True):
 
 
 def getSelectedVerticesOfObject(obj):
-    bpy.ops.object.editmode_toggle()
-    bpy.ops.object.editmode_toggle()
+    bpy.ops.object.editmode_toggle()  # for data update
+    bpy.ops.object.editmode_toggle()  # for data update
     return list(filter(lambda v: v.select, obj.data.vertices))
 
 

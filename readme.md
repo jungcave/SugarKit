@@ -6,10 +6,9 @@ Sugar Kit is a collection of tools for 3d-artists that adds various features, ai
 
 ## SugarKit
 
-v3.1 feature tools:
+v3.1 features tools:
 - Object Viewport Color Set
 - Object Viewport Alpha Toggle
-- Object Unhide All Collections But Keep Objects Hidden
 - Object Modifier Setups: Axis Bend, Radial Array
 - Mesh Quad Fill
 - Vertex Group Rename Active
@@ -23,7 +22,7 @@ v3.1 feature tools:
 - Sculpt Draw Curve
 - Sculpt Trim Curve
 - Sculpt Symmetrize Weld
-- Sculpt Parts: Separate, Join, Remesh
+- Sculpt Loose Parts: Separate, Join, Remesh
 - Paint Gradient Settings
 - Paint Color Palette
 - Paint Mask Invert

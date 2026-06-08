@@ -1,6 +1,7 @@
 import bpy
 from bpy.types import bpy_prop_collection
 from bpy.app.handlers import persistent
+import bmesh
 from types import SimpleNamespace
 import math
 from .SugarUtils import *
@@ -44,10 +45,6 @@ def Hotkeys(isRegister):
         for kmn in ['Object Mode', 'Mesh', 'Sculpt', 'Vertex Paint', 'Weight Paint', 'Texture Paint']:
             addAddonKeymapItem(kmn, ObjectViewportAlphaToggleOperator.bl_idname,
                                'ACCENT_GRAVE Z')
-        # Objects Collections Unable Visibility
-        for kmn in ['Object Mode', 'Outliner']:
-            addAddonKeymapItem(kmn, ObjectUnhideAllCollectionsButKeepObjectsHiddenOperator.bl_idname,
-                               'H ctrl alt')
         # Object Modifier Setups
         addAddonKeymapItem('Object Mode', ObjectModifierSetupAxisBendOperator.bl_idname,
                            'LEFTMOUSE shift alt S')
@@ -56,6 +53,8 @@ def Hotkeys(isRegister):
         # Mesh Quad Fill
         addAddonKeymapItem('Mesh', MeshQuadFillOperator.bl_idname,
                            'Q ctrl')
+        addAddonKeymapItem('Mesh', MeshSelectPathAlongNonMainfold.bl_idname,
+                           'LEFTMOUSE ctrl')
         # Vertex Groups Ops
         addAddonKeymapItem('Mesh', VertexGroupRenamePanelOperator.bl_idname,
                            'R ctrl')
@@ -70,11 +69,15 @@ def Hotkeys(isRegister):
         # Curve Select Whole Handle
         addAddonKeymapItem('Curve', CurveSelectWholeHandlePointsOperator.bl_idname,
                            'LEFTMOUSE shift DOUBLE_CLICK')
-        # Curve Toggle Props
+        # Curve Data Props
+        addAddonKeymapItem('Curve', {'wm.context_menu_enum': {'data_path': 'object.data.bevel_mode'}},
+                           'B')
+        addAddonKeymapItem('Curve', {'wm.context_menu_enum': {'data_path': 'object.data.bevel_depth'}},
+                           'D shift')
         addAddonKeymapItem('Curve', CurveToggleDepthOperator.bl_idname,
-                           'T shift')
+                           'D alt')
         addAddonKeymapItem('Curve', CurveToggleFillCapsOperator.bl_idname,
-                           'F shift')
+                           'F alt')
         # Curve Select Endpoints
         addAddonKeymapItem('Curve', CurveSelectEndpointsMenuOperator.bl_idname,
                            'E shift')
@@ -87,7 +90,7 @@ def Hotkeys(isRegister):
         # Sculpt Symmetrize Weld
         addAddonKeymapItem('Sculpt', SculptSymmetrizeWeldPanelOperator.bl_idname,
                            'W shift alt')
-        # Sculpt Parts
+        # Sculpt Loose Parts
         addAddonKeymapItem('Sculpt', SculptHoveredLoosePartSeparateOperator.bl_idname,
                            'RIGHTMOUSE ctrl CLICK')
         addAddonKeymapItem('Sculpt', SculptHoveredObjectJoinOperator.bl_idname,
@@ -121,9 +124,9 @@ def Hotkeys(isRegister):
                            'N alt')
         # Image/Shading Set Active
         addAddonKeymapItem('Image', ImageSetActiveMenuOperator.bl_idname,
-                           'TAB shift ctrl')
+                           'TAB shift alt')
         addAddonKeymapItem('Node Editor', ShadingSetActiveMenuOperator.bl_idname,
-                           'TAB shift ctrl')
+                           'TAB shift alt')
         # Image/Shading Keep Fake User
         addAddonKeymapItem('Image', ImageKeepFakeUserOperator.bl_idname,
                            'K')
@@ -158,12 +161,13 @@ def Hotkeys(isRegister):
 
 # / Window Utils
 
+
 glob = SimpleNamespace()
 glob.event = SimpleNamespace()
 
 
 class WindowUpdateGlobalEventOperator(bpy.types.Operator):
-    bl_idname = "window.xx_update_global_event"
+    bl_idname = "window.xx_window_update_global_event"
     bl_label = ""
 
     def invoke(self, context, event):
@@ -181,7 +185,7 @@ def yield_global_event(event=None):
     global glob
     if not event:
         # Call from bpy.msgbus.subscribe_rna
-        bpy.ops.window.xx_update_global_event('INVOKE_REGION_WIN')
+        bpy.ops.window.xx_window_update_global_event('INVOKE_REGION_WIN')
     else:
         # Call from bpy.type.Operator invoke
         glob.event = toSimpleNameSpace(event)
@@ -191,12 +195,13 @@ def yield_global_event(event=None):
 # / Object Tools
 
 
-# TODO: 3.2.x If initially context.scene.tool_settings.unified_paint_settings.use_unified_color=False, set True and set False again after SubscribeBrushColor is finished \
+#! TODO: if initially context.scene.tool_settings.unified_paint_settings.use_unified_color=False,
+#!     set True and set False back after SubscribeBrushColor is finished \
 class ObjectViewportColorSetPanelOperator(bpy.types.Operator):
     # This operator inits values for ObjectViewportColorSetPanel
     """Set object's active material viewport display color."""
     bl_label = "Set Viewport Color"
-    bl_idname = "object.xx_active_material_viewport_color_panel"
+    bl_idname = "object.xx_object_active_material_viewport_color_panel"
     bl_options = {'REGISTER', 'UNDO'}
 
     select_with_same_mat: bpy.props.BoolProperty(
@@ -248,7 +253,7 @@ class ObjectViewportColorSetPanel(bpy.types.Panel):
     bl_space_type = 'TOPBAR'  # requered panel dummy
     bl_region_type = 'HEADER'  # requered panel dummy
     bl_label = "Set Viewport Color"
-    bl_idname = "xx_active_material_viewport_color_panel"
+    bl_idname = "xx_object_active_material_viewport_color_panel"
     bl_ui_units_x = 10  # width
 
     def draw(self, context):
@@ -400,23 +405,6 @@ class ObjectViewportAlphaToggleOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class ObjectUnhideAllCollectionsButKeepObjectsHiddenOperator(bpy.types.Operator):
-    bl_label = "Unhide All Collections But Keep Objects Hidden"
-    bl_idname = "object.xx_object_unhide_all_collections"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        try:
-            collections = context.scene.view_layers[0].layer_collection.children
-        except Exception as er:
-            collections = None
-        if not collections or not len(collections):
-            return {'FINISHED'}
-        for col in collections:
-            col.hide_viewport = False
-        return {'FINISHED'}
-
-
 # Modifier Setups
 
 
@@ -453,7 +441,7 @@ class ObjectModifierSetupAxisBendOperator(bpy.types.Operator):
 
 class ObjectModifierSetupRadialArrayOperator(bpy.types.Operator):
     bl_label = "Add Modifier Setup"
-    bl_idname = "object.xx_setup_radial_array_modifier"
+    bl_idname = "object.xx_modifier_setup_radial_array"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
@@ -495,25 +483,76 @@ class MeshQuadFillOperator(bpy.types.Operator):
         return context.mode == 'EDIT_MESH'
 
     def execute(self, context):
+        # Make fill
         bpy.ops.mesh.edge_face_add()
         bpy.ops.mesh.quads_convert_to_tris()
         bpy.ops.mesh.tris_convert_to_quads(
-            face_threshold=1.5708,  shape_threshold=1.5708)  # Face/Shape Angle:[90deg] \
+            face_threshold=3.1415,  shape_threshold=1.5708)  # Face/Shape Angle:[180/90deg] \
+        # Remember active vert
+        mesh = context.active_object.data
+        bm = bmesh.from_edit_mesh(mesh)
+        act = bm.select_history.active
+        # Deselect all except active vert
+        bpy.ops.mesh.select_all(action='DESELECT')
+        act.select = True
+        bm.select_history.add(act)
         return {'FINISHED'}
 
 
-# TODO: 3.2.x InterceptiveMerge (alt C)
-#
-# - create vertex group from selected (1 for intersect)
-# - select more (face step [_])
-# - create vertex group from selected (2 for merge)
-# - deselect all, select group 1
-# - knife intersect
-# - select group 2
-# - merge by distance
-# - remove group 2
-# - deselect all, select group 1
-# - remove group 1
+#! TODO: remember and restore hidden geometry
+# TODO: 3.2.x create prop scene.xx_select_path_along_non_mainfold and execute MeshSelectPathAlongNonMainfold when it is True
+class MeshSelectPathAlongNonMainfold(bpy.types.Operator):
+    bl_label = "Select Shortest Path"
+    bl_idname = "mesh.xx_mesh_select_path_along_non_mainfold"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        vertMode, edgeMode, faceMode = tuple(
+            context.scene.tool_settings.mesh_select_mode)
+
+        mesh = context.active_object.data
+        bm = bmesh.from_edit_mesh(mesh)
+        act = bm.select_history.active
+
+        return not faceMode and hasattr(act, 'select') and bool(act.is_boundary)
+
+    def execute(self, context):
+        o = context.active_object
+        selVertLenStart = len(getSelectedVerticesOfObject(o))
+
+        # Remember selected verts
+        # sel (warning: must be before bm, because vg ops recalc ids)
+        bpy.ops.object.vertex_group_assign_new()
+        # Remember active vert
+        mesh = o.data
+        bm = bmesh.from_edit_mesh(mesh)
+        act = bm.select_history.active
+
+        # Select non mainfold
+        bpy.ops.mesh.select_non_manifold(extend=True)
+        # Isolate non mainfold
+        bpy.ops.mesh.hide(unselected=True)
+        bpy.ops.mesh.select_all(action='DESELECT')
+
+        # Restore active vert
+        act.select = True
+        bm.select_history.add(act)
+        # Restore selected verts
+        bpy.ops.object.vertex_group_select()
+        bpy.ops.object.vertex_group_remove()  # sel
+
+        # Path pick
+        bpy.ops.mesh.shortest_path_pick('INVOKE_DEFAULT')
+        bpy.ops.mesh.reveal(select=False)
+
+        selVertLenFinish = len(getSelectedVerticesOfObject(o))
+
+        # If target vertex not belong to non mainfold make default path pick
+        if selVertLenStart == selVertLenFinish:
+            bpy.ops.mesh.shortest_path_pick('INVOKE_DEFAULT')
+
+        return {'FINISHED'}
 
 
 # / Vertex Groups Tools
@@ -788,15 +827,16 @@ class SculptDrawCurveOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# TODO: 3.2.x Make TRIM_CURVE_RESOLUTION setable as modal option
-# TODO: 3.2.x Make modal keys setable from keymap settings
+#! TODO: hide UI gizmo if it is visible before SculptTrimCurveModalOperator
+# TODO: 3.2.x make TRIM_CURVE_RESOLUTION setable as modal option
+# TODO: 3.2.x make modal keys setable from keymap settings
 class SculptTrimCurveModalOperator(bpy.types.Operator):
     credits = [
         'https://blenderartists.org/t/how-can-i-ask-the-user-to-draw-a-curve/1462361',
         'https://blenderartists.org/t/using-grease-pencil-annotation-from-modal-in-blender-2-8/1203973',
         "https://www.youtube.com/watch?v=3C6wVPVrPtM",
     ]
-    bl_idname = "sculpt.xx_trim_curve_modal"
+    bl_idname = "sculpt.xx_sculpt_trim_curve_modal"
     bl_label = "Sculpt Trim Curve Modal"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -811,13 +851,12 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
     STATUS_TEXT = " ".join([
         "Cancel: Esc |",
         "Confirm: Ent/Space |",
-        "Select/Move, Extend, Path, Whole: LM, Shift+LM, Ctrl+Dbl+LM, Shift+Dbl+LM |",
-        "Select Whole, Path: Shift+Dbl+LM, Ctrl+Dbl+LM |",
-        "Extrude/Insert/Close: Ctrl+LM |",
+        "Select/Move, Extend, Whole: LM, Shift+LM, Shift+Dbl+LM |",
+        "Path/Extrude/Insert/Close: Ctrl+LM |",
         "Delete: Alt+LM |",
         "Move, Scale, Rotate: RM, Shift+RM, Alt+RM |",
         "All, Invert: A, Alt+A |",
-        "Vector/Auto, Toggle: shift 1/2, Dbl+Alt/LM |",
+        "Vector/Auto, Toggle: Shift+1/2, Dbl+Alt |",
         "Recalc: Ctrl+R |",
         "Smooth: Shift+Alt+S |",
         "Undo, Redo: Ctrl+Z, Shift+Ctrl+Z",
@@ -1058,7 +1097,7 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                 self.has_chandes_header_by_submodal = True
                 return {'RUNNING_MODAL'}
             # Close
-            elif isPen and eventKeyIs(event, 'C shift'):
+            elif isPen and eventKeyIs(event, 'C ctrl'):
                 bpy.ops.curve.cyclic_toggle()
                 return {'RUNNING_MODAL'}
             # Delete
@@ -1383,7 +1422,7 @@ class SculptSymmetrizeWeldPanel(bpy.types.Panel):
         layout.operator("sculpt.symmetrize")
 
 
-# Sculpt Parts
+# Sculpt Loose Parts
 
 
 class SculptHoveredLoosePartSeparateOperator(bpy.types.Operator):
