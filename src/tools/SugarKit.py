@@ -14,20 +14,30 @@ def Props(isRegister):
     if isRegister:
         bpy.types.Object.xx_active_vert_group_name = bpy.props.StringProperty(
             name="", update=handleActiveVertGroupNameUpdate)
+        bpy.types.Scene.xx_use_select_path_along_non_mainfold = bpy.props.BoolProperty(
+            name="Use Select Path Along Non Mainfold", default=True)
     else:
         del bpy.types.Object.xx_active_vert_group_name
+        del bpy.types.Scene.xx_use_select_path_along_non_mainfold
 
 
 def Menus(isRegister):
-    def view3d_mt_view(self, context):
+    def customView3dView(self, context):
         self.layout.separator()
         self.layout.operator_context = "INVOKE_DEFAULT"
         self.layout.operator(ObjectViewportAlphaToggleOperator.bl_idname)
 
+    def customView3dOptions(self, context):
+        self.layout.operator_context = "INVOKE_DEFAULT"
+        self.layout.prop(
+            context.scene, "xx_use_select_path_along_non_mainfold")
+
     if isRegister:
-        bpy.types.VIEW3D_MT_view.append(view3d_mt_view)
+        bpy.types.VIEW3D_MT_view.append(customView3dView)
+        bpy.types.VIEW3D_PT_tools_meshedit_options.append(customView3dOptions)
     else:
-        bpy.types.VIEW3D_MT_view.remove(view3d_mt_view)
+        bpy.types.VIEW3D_MT_view.remove(customView3dView)
+        bpy.types.VIEW3D_PT_tools_meshedit_options.remove(customView3dOptions)
 
 
 def Subscriptions(isRegister):
@@ -37,129 +47,125 @@ def Subscriptions(isRegister):
 
 def Hotkeys(isRegister):
     if isRegister:
-        # Object Viewport Display Props
-        addAddonKeymapItem('Object Mode', ObjectViewportColorSetPanelOperator.bl_idname,
-                           'C')
-        addAddonKeymapItem('3D View', ObjectViewportAlphaToggleOperator.bl_idname,
-                           'NINE')
+        def add(keymapName, operatorData, hotkey):
+            addKeymapItem(keymapName, operatorData,
+                          hotkey, space='addon')
+
+        # Object Viewport Display Color
+        add('Object Mode', ObjectViewportColorPalettePanelOperator.bl_idname,
+            'C')
+        add('3D View', ObjectViewportAlphaToggleOperator.bl_idname,
+            'NINE')
         for kmn in ['Object Mode', 'Mesh', 'Sculpt', 'Vertex Paint', 'Weight Paint', 'Texture Paint']:
-            addAddonKeymapItem(kmn, ObjectViewportAlphaToggleOperator.bl_idname,
-                               'ACCENT_GRAVE Z')
+            add(kmn, ObjectViewportAlphaToggleOperator.bl_idname,
+                'ACCENT_GRAVE Z')
         # Object Modifier Setups
-        addAddonKeymapItem('Object Mode', ObjectModifierSetupAxisBendOperator.bl_idname,
-                           'LEFTMOUSE shift alt S')
-        addAddonKeymapItem('Object Mode', ObjectModifierSetupRadialArrayOperator.bl_idname,
-                           'LEFTMOUSE shift alt X')
+        add('Object Mode', ObjectModifierSetupBendOperator.bl_idname,
+            'B shift alt S')
+        add('Object Mode', ObjectModifierSetupRadialArrayOperator.bl_idname,
+            'R shift alt S')
         # Mesh Quad Fill
-        addAddonKeymapItem('Mesh', MeshQuadFillOperator.bl_idname,
-                           'Q ctrl')
-        addAddonKeymapItem('Mesh', MeshSelectPathAlongNonMainfold.bl_idname,
-                           'LEFTMOUSE ctrl')
-        # Vertex Groups Ops
-        addAddonKeymapItem('Mesh', VertexGroupRenamePanelOperator.bl_idname,
-                           'R ctrl')
-        for kmn in ['Sculpt', 'Vertex Paint', 'Weight Paint', 'Image Paint']:
-            addAddonKeymapItem(kmn, VertexGroupSelectPanelOperator.bl_idname,
-                               'G shift')
-        addAddonKeymapItem('Sculpt', VertexGroupToSculptFaceSetOperator.bl_idname,
-                           'G alt')
+        add('Mesh', MeshQuadFillOperator.bl_idname,
+            'Q ctrl')
+        add('Mesh', MeshUseSelectPathAlongNonMainfoldToggleOperator.bl_idname,
+            'LEFT_ALT DOUBLE_CLICK')
+        add('Mesh', MeshSelectPathAlongNonMainfold.bl_idname,
+            'LEFTMOUSE ctrl')
+        # Vertex Groups
+        add('Mesh', VertexGroupRenamePanelOperator.bl_idname,
+            'R ctrl')
+        add('Sculpt', VertexGroupToSculptFaceSetOperator.bl_idname,
+            'G alt')
         for kmn in ['Vertex Selection (Weight, Vertex)', 'Face Mask (Weight, Vertex, Texture)']:
-            addAddonKeymapItem('Paint ' + kmn, VertexGroupToPaintSelectMaskOperator.bl_idname,
-                               'G')
-        # Curve Select Whole Handle
-        addAddonKeymapItem('Curve', CurveSelectWholeHandlePointsOperator.bl_idname,
-                           'LEFTMOUSE shift DOUBLE_CLICK')
+            add('Paint ' + kmn, VertexGroupToPaintSelectMaskOperator.bl_idname,
+                'G')
         # Curve Data Props
-        addAddonKeymapItem('Curve', {'wm.context_menu_enum': {'data_path': 'object.data.bevel_mode'}},
-                           'B')
-        addAddonKeymapItem('Curve', {'wm.context_menu_enum': {'data_path': 'object.data.bevel_depth'}},
-                           'D shift')
-        addAddonKeymapItem('Curve', CurveToggleDepthOperator.bl_idname,
-                           'D alt')
-        addAddonKeymapItem('Curve', CurveToggleFillCapsOperator.bl_idname,
-                           'F alt')
+        add('Curve', {'wm.context_menu_enum': {'data_path': 'object.data.extrude'}},
+            'E alt')
+        add('Curve', {'wm.context_menu_enum': {'data_path': 'object.data.bevel_mode'}},
+            'B')
+        add('Curve', {'wm.context_menu_enum': {'data_path': 'object.data.bevel_depth'}},
+            'D shift')
+        add('Curve', CurveBevelDepthToggleOperator.bl_idname,
+            'D alt')
+        add('Curve',  {'wm.context_toggle': {'data_path': 'object.data.use_fill_caps'}},
+            'F alt')
         # Curve Select Endpoints
-        addAddonKeymapItem('Curve', CurveSelectEndpointsMenuOperator.bl_idname,
-                           'E shift')
+        add('Curve', CurveSelectEndpointsMenuOperator.bl_idname,
+            'E shift')
         # Sculpt Draw Curve
-        addAddonKeymapItem('Sculpt', SculptDrawCurveOperator.bl_idname,
-                           'C shift alt')
+        add('Sculpt', SculptDrawCurveOperator.bl_idname,
+            'C shift alt')
         # Sculpt Trim Curve
-        addAddonKeymapItem('Sculpt', SculptTrimCurveModalOperator.bl_idname,
-                           'X shift alt')
-        # Sculpt Symmetrize Weld
-        addAddonKeymapItem('Sculpt', SculptSymmetrizeWeldPanelOperator.bl_idname,
-                           'W shift alt')
+        add('Sculpt', SculptTrimCurveModalOperator.bl_idname,
+            'X shift alt')
         # Sculpt Loose Parts
-        addAddonKeymapItem('Sculpt', SculptHoveredLoosePartSeparateOperator.bl_idname,
-                           'RIGHTMOUSE ctrl CLICK')
-        addAddonKeymapItem('Sculpt', SculptHoveredObjectJoinOperator.bl_idname,
-                           'RIGHTMOUSE shift ctrl CLICK')
-        addAddonKeymapItem('Sculpt', SculptRemeshByLoosePartsOperator.bl_idname,
-                           'R shift ctrl')
+        add('Sculpt', SculptHoveredLoosePartSeparateOperator.bl_idname,
+            'RIGHTMOUSE ctrl CLICK')
+        add('Sculpt', SculptHoveredObjectJoinOperator.bl_idname,
+            'RIGHTMOUSE shift ctrl CLICK')
+        add('Sculpt', SculptRemeshByLoosePartsOperator.bl_idname,
+            'R shift ctrl')
         # Paint Gradient Settings
         for km in ['Vertex Paint', 'Image Paint']:
-            addAddonKeymapItem(km, PaintGradientSettingsPanelOperator.bl_idname,
-                               'G ctrl')
+            add(km, PaintGradientSettingsPanelOperator.bl_idname,
+                'G ctrl')
         # Paint Color Palette
         for km in ['Vertex Paint', 'Image Paint']:
-            addAddonKeymapItem(km, PaintColorPalettePanelOperator.bl_idname,
-                               'C')
+            add(km, PaintColorPalettePanelOperator.bl_idname,
+                'C')
         # Paint Mask
-        addAddonKeymapItem('Image Paint', PaintMaskImageInvertOperator.bl_idname,
-                           'Q alt')
-        # Pack Image/All, Unpack Image
-        addAddonKeymapItem('Image', ImagePackOperator.bl_idname,
-                           'K ctrl')
-        addAddonKeymapItem('Image', ImagePackOperator.bl_idname,
-                           'LEFT_CTRL Z')
-        addAddonKeymapItem('Window', PackAllSavedOperator.bl_idname,
-                           'SPACE shift ctrl')
-        addAddonKeymapItem('Image', ImageUnpackOperator.bl_idname,
-                           'K alt')
-        addAddonKeymapItem('Image', ImageUnpackOperator.bl_idname,
-                           'LEFT_ALT Z')
-        # Image/Shading Create New
-        addAddonKeymapItem('Node Editor', ShadingCreateNewOperator.bl_idname,
-                           'N alt')
+        add('Image Paint', PaintMaskImageInvertOperator.bl_idname,
+            'Q alt')
+        # Image Pack All/Active, Active Unpack
+        add('Window', PackAllSavedOperator.bl_idname,
+            'SPACE shift ctrl')
+        for kmn in ['Image', 'UV Editor']:
+            add(kmn, 'image.pack',
+                'K ctrl')
+            add(kmn, 'image.pack',
+                'LEFT_CTRL Z repeat')
+            add(kmn, 'image.unpack',
+                'K alt')
+            add(kmn, ImageUnpackOperator.bl_idname,
+                'LEFT_ALT Z')
+        # Shading Create New
+        add('Node Editor', ShadingCreateNewOperator.bl_idname,
+            'N alt')
         # Image/Shading Set Active
-        addAddonKeymapItem('Image', ImageSetActiveMenuOperator.bl_idname,
-                           'TAB shift alt')
-        addAddonKeymapItem('Node Editor', ShadingSetActiveMenuOperator.bl_idname,
-                           'TAB shift alt')
+        add('Image', ImageSetActiveMenuOperator.bl_idname,
+            'TAB alt')
+        add('Node Editor', ShadingSetActiveMenuOperator.bl_idname,
+            'TAB alt')
+        # Image/Shading Make Single (Clone)
+        add('Image', ImageMakeSingleCopyOperator.bl_idname,
+            'C shift ctrl')
+        add('Node Editor', MaterialMakeSingleCopyOperator.bl_idname,
+            'C shift ctrl')
         # Image/Shading Keep Fake User
-        addAddonKeymapItem('Image', ImageKeepFakeUserOperator.bl_idname,
-                           'K')
-        addAddonKeymapItem('Image', ImageKeepFakeUserOperator.bl_idname,
-                           'Z CLICK')
-        addAddonKeymapItem('Node Editor', ShadingKeepFakeUserOperator.bl_idname,
-                           'K')
-        addAddonKeymapItem('Node Editor', ShadingKeepFakeUserOperator.bl_idname,
-                           'Z CLICK')
-        # Image/Shading Make Single Copy
-        addAddonKeymapItem('Image', ImageMakeSingleCopyOperator.bl_idname,
-                           'C alt')
-        addAddonKeymapItem('Image', ImageMakeSingleCopyOperator.bl_idname,
-                           'TAB Z')
-        addAddonKeymapItem('Node Editor', MaterialMakeSingleCopyOperator.bl_idname,
-                           'C alt')
-        addAddonKeymapItem('Node Editor', MaterialMakeSingleCopyOperator.bl_idname,
-                           'TAB Z')
+        add('Image', ImageKeepFakeUserOperator.bl_idname,
+            'K')
+        add('Image', ImageKeepFakeUserOperator.bl_idname,
+            'Z CLICK')
+        add('Node Editor', ShadingKeepFakeUserOperator.bl_idname,
+            'K')
+        add('Node Editor', ShadingKeepFakeUserOperator.bl_idname,
+            'Z CLICK')
         # Image/Shading Close
-        addAddonKeymapItem('Image', ImageCloseOperator.bl_idname,
-                           'X ctrl alt')
-        addAddonKeymapItem('Node Editor', ShadingCloseOperator.bl_idname,
-                           'X ctrl alt')
+        add('Image', ImageCloseOperator.bl_idname,
+            'X ctrl alt')
+        add('Node Editor', ShadingCloseOperator.bl_idname,
+            'X ctrl alt')
         # Image/Shading Remove
-        addAddonKeymapItem('Image', ImageRemoveOperator.bl_idname,
-                           'X shift ctrl')
-        addAddonKeymapItem('Node Editor', ShadingRemoveOperator.bl_idname,
-                           'X shift ctrl')
+        add('Image', ImageRemoveOperator.bl_idname,
+            'X shift ctrl')
+        add('Node Editor', ShadingRemoveOperator.bl_idname,
+            'X shift ctrl')
     else:
-        removeAddonKeymapItems()
+        clearAddonKeymapItems()
 
 
-# / Window Utils
+# / WINDOW
 
 
 glob = SimpleNamespace()
@@ -192,16 +198,17 @@ def yield_global_event(event=None):
     return glob.event
 
 
-# / Object Tools
+# / OBJECT
 
 
-#! TODO: if initially context.scene.tool_settings.unified_paint_settings.use_unified_color=False,
-#!     set True and set False back after SubscribeBrushColor is finished \
-class ObjectViewportColorSetPanelOperator(bpy.types.Operator):
-    # This operator inits values for ObjectViewportColorSetPanel
+#! TODO: if initially context.scene.tool_settings.unified_paint_settings.use_unified_color=False - set True,
+#!  and set back False after SubscribeBrushColor is finished.
+#!  Possible solution: subscribe object mode change and restore initial value in its handler \
+class ObjectViewportColorPalettePanelOperator(bpy.types.Operator):
+    # This operator inits values for ObjectViewportColorPalettePanel
     """Set object's active material viewport display color."""
     bl_label = "Set Viewport Color"
-    bl_idname = "object.xx_object_active_material_viewport_color_panel"
+    bl_idname = "object.xx_object_viewport_color_palette_panel"
     bl_options = {'REGISTER', 'UNDO'}
 
     select_with_same_mat: bpy.props.BoolProperty(
@@ -243,17 +250,17 @@ class ObjectViewportColorSetPanelOperator(bpy.types.Operator):
         context.scene.tool_settings.unified_paint_settings.use_unified_color = True
 
         bpy.ops.wm.call_panel(
-            name=ObjectViewportColorSetPanel.bl_idname)
+            name=ObjectViewportColorPalettePanel.bl_idname)
 
         return {'FINISHED'}
 
 
-class ObjectViewportColorSetPanel(bpy.types.Panel):
+class ObjectViewportColorPalettePanel(bpy.types.Panel):
     # This panel's changes trigger SubscribeBrushColor
     bl_space_type = 'TOPBAR'  # requered panel dummy
     bl_region_type = 'HEADER'  # requered panel dummy
     bl_label = "Set Viewport Color"
-    bl_idname = "xx_object_active_material_viewport_color_panel"
+    bl_idname = "xx_object_viewport_color_palette_panel"
     bl_ui_units_x = 10  # width
 
     def draw(self, context):
@@ -340,7 +347,7 @@ def SubscribeBrushColor(isRegister=True):
         glob.prev_palette_color = paletteColor
 
     def handleBrushColorChange():
-        # After ObjectViewportColorSetPanel changes
+        # After ObjectViewportColorPalettePanel changes
         setObjectViewportColorSet()
 
     def subscribeBrushColor():
@@ -405,12 +412,12 @@ class ObjectViewportAlphaToggleOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# Modifier Setups
+# MODIFIER SETUPS
 
 
-class ObjectModifierSetupAxisBendOperator(bpy.types.Operator):
+class ObjectModifierSetupBendOperator(bpy.types.Operator):
     bl_label = "Add Modifier Setup"
-    bl_idname = "object.xx_modifier_setup_axis_bend"
+    bl_idname = "object.xx_modifier_setup_bend"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
@@ -424,8 +431,6 @@ class ObjectModifierSetupAxisBendOperator(bpy.types.Operator):
         col = getObjectCollection(obj)
         moveObjectToCollection(empty, col)
         empty.parent = obj
-        # Justifies empty's rotation (in ui its done automatically)
-        empty.scale = obj.scale
 
         modifier = obj.modifiers.new(
             name="Simple Deform", type='SIMPLE_DEFORM')
@@ -451,6 +456,7 @@ class ObjectModifierSetupRadialArrayOperator(bpy.types.Operator):
     def execute(self, context):
         obj = context.active_object
         applyObjectTransformsWithContext(context, obj, ['scale'])
+        bpy.ops.object.origin_set(type='ORIGIN_CURSOR', center='MEDIAN')
 
         empty = bpy.data.objects.new(name="_radial_empty", object_data=None)
         col = getObjectCollection(obj)
@@ -467,10 +473,16 @@ class ObjectModifierSetupRadialArrayOperator(bpy.types.Operator):
         empty.select_set(True)
         bpy.context.view_layer.objects.active = empty
 
+        bpy.ops.object.constraint_add(type='COPY_ROTATION')
+        for con in empty.constraints[:]:
+            if con.type == "COPY_ROTATION":
+                con.target = obj
+                bpy.ops.constraint.apply(constraint=con.name)
+
         return {'FINISHED'}
 
 
-# / Mesh Tools
+# / MESH
 
 
 class MeshQuadFillOperator(bpy.types.Operator):
@@ -478,29 +490,75 @@ class MeshQuadFillOperator(bpy.types.Operator):
     bl_idname = "mesh.xx_mesh_quad_fill"
     bl_options = {'REGISTER', 'UNDO'}
 
+    method: bpy.props.EnumProperty(name='Method', items=[
+        ('GRID', 'Grid', ''), ('QUAD', 'To Quads', '')])
+
     @classmethod
     def poll(cls, context):
         return context.mode == 'EDIT_MESH'
 
     def execute(self, context):
-        # Make fill
-        bpy.ops.mesh.edge_face_add()
-        bpy.ops.mesh.quads_convert_to_tris()
-        bpy.ops.mesh.tris_convert_to_quads(
-            face_threshold=3.1415,  shape_threshold=1.5708)  # Face/Shape Angle:[180/90deg] \
-        # Remember active vert
         mesh = context.active_object.data
         bm = bmesh.from_edit_mesh(mesh)
+
+        # Remember selected verts
+        selVerts = getSelectedVertsOfBMesh(bm)
+        isOddLen = len(selVerts) % 2 != 0
+        # Remember active vert
         act = bm.select_history.active
-        # Deselect all except active vert
-        bpy.ops.mesh.select_all(action='DESELECT')
-        act.select = True
-        bm.select_history.add(act)
+
+        def fillToQuads():
+            bpy.ops.mesh.edge_face_add()
+            bpy.ops.mesh.quads_convert_to_tris()
+            bpy.ops.mesh.tris_convert_to_quads(
+                face_threshold=3.1415,  shape_threshold=1.5708)  # Face/Shape Angle:[180/90deg] \
+
+        def deselectAllExceptActiveVert(act, bm):
+            bpy.ops.mesh.select_all(action='DESELECT')
+            if act:
+                act.select_set(True)
+                bm.select_history.add(act)
+
+        # Make fill
+        if self.method == 'GRID' and not isOddLen:
+            bpy.ops.mesh.edge_face_add()
+            bpy.ops.mesh.delete(type='ONLY_FACE')  # deselects verts
+            for v in selVerts:
+                v.select_set(True)
+            if act:
+                bm.select_history.add(act)
+            bpy.ops.object.editmode_toggle()  # necessary to fill_grid(), but kills bmesh :\
+            bpy.ops.object.editmode_toggle()
+            bpy.ops.mesh.fill_grid()
+            if isNoneFasesSelectedInObject(context.active_object):
+                self.report(
+                    {'WARNING'}, "Grid fill replaced to quads because failed to create faces!")
+                fillToQuads()
+            deadBMeshDeselectAllExceptActiveInMesh(mesh)
+        elif self.method == 'GRID' and isOddLen:
+            self.report(
+                {'WARNING'}, "Grid fill replaced to quads because verts count is odd!")
+            fillToQuads()
+            deselectAllExceptActiveVert(act, bm)
+        elif self.method == 'QUAD':
+            fillToQuads()
+            deselectAllExceptActiveVert(act, bm)
+
         return {'FINISHED'}
 
 
-#! TODO: remember and restore hidden geometry
-# TODO: 3.2.x create prop scene.xx_select_path_along_non_mainfold and execute MeshSelectPathAlongNonMainfold when it is True
+class MeshUseSelectPathAlongNonMainfoldToggleOperator(bpy.types.Operator):
+    bl_label = "Mesh Use Select Path Along Non Mainfold Toggle"
+    bl_idname = "scene.xx_mesh_use_select_path_along_non_mainfold_toggle"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        bpy.ops.wm.context_menu_enum(
+            data_path='scene.xx_use_select_path_along_non_mainfold')
+        return {'FINISHED'}
+
+
+# TODO: add handle of edge mode
 class MeshSelectPathAlongNonMainfold(bpy.types.Operator):
     bl_label = "Select Shortest Path"
     bl_idname = "mesh.xx_mesh_select_path_along_non_mainfold"
@@ -508,54 +566,94 @@ class MeshSelectPathAlongNonMainfold(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        isUsed = context.scene.xx_use_select_path_along_non_mainfold
+        if not isUsed:
+            return False
+
         vertMode, edgeMode, faceMode = tuple(
             context.scene.tool_settings.mesh_select_mode)
+        if not vertMode or faceMode:
+            return False
 
         mesh = context.active_object.data
         bm = bmesh.from_edit_mesh(mesh)
         act = bm.select_history.active
+        if not act or not hasattr(act, 'select'):
+            return False
 
-        return not faceMode and hasattr(act, 'select') and bool(act.is_boundary)
+        isActVertNonMainfoldForSure = act.is_boundary or act.is_wire
+        return isActVertNonMainfoldForSure
 
     def execute(self, context):
         o = context.active_object
-        selVertLenStart = len(getSelectedVerticesOfObject(o))
-
-        # Remember selected verts
-        # sel (warning: must be before bm, because vg ops recalc ids)
-        bpy.ops.object.vertex_group_assign_new()
-        # Remember active vert
         mesh = o.data
         bm = bmesh.from_edit_mesh(mesh)
-        act = bm.select_history.active
+        selVertsLenStart = len(list(filter(lambda v: v.select, bm.verts)))
 
-        # Select non mainfold
+        # Remember active vert
+        act = bm.select_history.active
+        # Remember selected verts
+        selectedVerts = []
+        for v in bm.verts:
+            if v.select:
+                selectedVerts.append(v)
+        # Remember hidden
+        hiddenEdges = []
+        for e in bm.edges:
+            if e.hide:
+                hiddenEdges.append(e)
+        hiddenFaces = []
+        for f in bm.faces:
+            if f.hide:
+                hiddenFaces.append(f)
+        # Remember target vertex
+        bpy.ops.view3d.select('INVOKE_DEFAULT', extend=True)  # activate
+        targetVert = bm.select_history.active
+        selVertsLenTarget = len(list(filter(lambda v: v.select, bm.verts)))
+        noTargetVertex = selVertsLenTarget <= selVertsLenStart
+        targetVert.select_set(False)
+        bm.select_history.remove(targetVert)
+
+        if noTargetVertex:
+            bpy.ops.mesh.shortest_path_pick('INVOKE_DEFAULT')
+            return {'FINISHED'}
+
+        # Select and isolate non mainfold
         bpy.ops.mesh.select_non_manifold(extend=True)
-        # Isolate non mainfold
         bpy.ops.mesh.hide(unselected=True)
-        bpy.ops.mesh.select_all(action='DESELECT')
+        # Deselect selected non mainfold verts not yet picked
+        for v in bm.verts:
+            v.select_set(False)
 
         # Restore active vert
         act.select = True
         bm.select_history.add(act)
         # Restore selected verts
-        bpy.ops.object.vertex_group_select()
-        bpy.ops.object.vertex_group_remove()  # sel
+        for v in selectedVerts:
+            v.select_set(True)
 
-        # Path pick
-        bpy.ops.mesh.shortest_path_pick('INVOKE_DEFAULT')
-        bpy.ops.mesh.reveal(select=False)
+        isTargetNonMainfold = not targetVert.hide
+        # Path pick (between visible non mainfold)
+        if isTargetNonMainfold:
+            bpy.ops.mesh.shortest_path_pick('INVOKE_DEFAULT')
 
-        selVertLenFinish = len(getSelectedVerticesOfObject(o))
+        # Reveal hidden verts
+        for v in bm.verts:
+            v.hide_set(False)
+        # Restore initially hidden
+        for e in hiddenEdges:
+            e.hide_set(True)
+        for f in hiddenFaces:
+            f.hide_set(True)
 
-        # If target vertex not belong to non mainfold make default path pick
-        if selVertLenStart == selVertLenFinish:
+        # Do default path pick if target vert not non-mainfold
+        if not isTargetNonMainfold:
             bpy.ops.mesh.shortest_path_pick('INVOKE_DEFAULT')
 
         return {'FINISHED'}
 
 
-# / Vertex Groups Tools
+# VERTEX GROUPS
 
 
 class VertexGroupRenamePanelOperator(bpy.types.Operator):
@@ -611,40 +709,6 @@ class VertexGroupRenamePanel(bpy.types.Panel):
             row.label(text="No active vertex group")
 
 
-class VertexGroupSelectPanelOperator(bpy.types.Operator):
-    bl_label = "Vertex Group Select"
-    bl_idname = "mesh.xx_vertex_group_select"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    @classmethod
-    def poll(cls, context):
-        try:
-            vertGroups = context.active_object.vertex_groups
-        except Exception as er:
-            vertGroups = None
-        return vertGroups and len(vertGroups)
-
-    def execute(self, context):
-        bpy.ops.wm.call_panel(
-            name=VertexGroupSelectPanel.bl_idname, keep_open=True)
-        return {'FINISHED'}
-
-
-class VertexGroupSelectPanel(bpy.types.Panel):
-    bl_space_type = 'TOPBAR'  # requered panel dummy
-    bl_region_type = 'HEADER'  # requered panel dummy
-    bl_label = "Active Vertex Group"
-    bl_idname = "xx_vertex_group_select"
-    bl_ui_units_x = 8  # width
-
-    def draw(self, context):
-        layout = self.layout
-        ob = context.object
-        row = layout.row()
-        row.template_list("MESH_UL_vgroups", "", ob, "vertex_groups",
-                          ob.vertex_groups, "active_index", rows=len(ob.vertex_groups) if len(ob.vertex_groups) < 21 else 21)
-
-
 class VertexGroupToSculptFaceSetOperator(bpy.types.Operator):
     bl_label = "Vertex Group To Sculpt Face Set"
     bl_idname = "paint.xx_vertex_group_to_sculpt_face_set"
@@ -689,23 +753,12 @@ class VertexGroupToPaintSelectMaskOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# / Curve Tools
+# CURVE
 
 
-class CurveSelectWholeHandlePointsOperator(bpy.types.Operator):
-    bl_label = "Curve Select Whole Handle Points"
-    bl_idname = "curve.xx_curve_select_whole_handle_points"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        actPoint = getCurveActivePoint(context.active_object, True)
-        selectWholeBezierPoint(actPoint)
-        return {'FINISHED'}
-
-
-class CurveToggleDepthOperator(bpy.types.Operator):
-    bl_label = "Curve Toggle Depth"
-    bl_idname = "curve.xx_curve_toggle_depth"
+class CurveBevelDepthToggleOperator(bpy.types.Operator):
+    bl_label = "Curve Bevel Depth Toggle"
+    bl_idname = "curve.xx_curve_bevel_depth_toggle"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
@@ -719,25 +772,6 @@ class CurveToggleDepthOperator(bpy.types.Operator):
     def execute(self, context):
         curveData = context.active_object.data
         curveData.bevel_depth = 0.01 if curveData.bevel_depth == 0.0 else 0.0
-        return {'FINISHED'}
-
-
-class CurveToggleFillCapsOperator(bpy.types.Operator):
-    bl_label = "Curve Toggle Fill Caps"
-    bl_idname = "curve.xx_curve_toggle_fill_caps"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    @classmethod
-    def poll(cls, context):
-        try:
-            curveData = context.active_object.data
-        except Exception as er:
-            curveData = None
-        return curveData and context.active_object.type == "CURVE"
-
-    def execute(self, context):
-        curveData = context.active_object.data
-        curveData.use_fill_caps = True if curveData.use_fill_caps == False else False
         return {'FINISHED'}
 
 
@@ -767,6 +801,7 @@ class CurveSelectEndpointsMenu(bpy.types.Menu):
         opEnd.type = 'END'
 
 
+#! TODO: set step max to longest curve spline len
 class CurveSelectEndpointsOperator(bpy.types.Operator):
     bl_label = "Curve Select Endpoints"
     bl_idname = "curve.xx_curve_select_endpoints"
@@ -799,7 +834,7 @@ class CurveSelectEndpointsOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# / Sculpt Tools
+# / SCULPT
 
 
 class SculptDrawCurveOperator(bpy.types.Operator):
@@ -827,8 +862,6 @@ class SculptDrawCurveOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-#! TODO: hide UI gizmo if it is visible before SculptTrimCurveModalOperator
-# TODO: 3.2.x make TRIM_CURVE_RESOLUTION setable as modal option
 # TODO: 3.2.x make modal keys setable from keymap settings
 class SculptTrimCurveModalOperator(bpy.types.Operator):
     credits = [
@@ -839,6 +872,9 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
     bl_idname = "sculpt.xx_sculpt_trim_curve_modal"
     bl_label = "Sculpt Trim Curve Modal"
     bl_options = {"REGISTER", "UNDO"}
+
+    trim_resolution: bpy.props.IntProperty(
+        name='Trim Resolution', default=16, min=16, max=256)
 
     DRAW_HEADER_TEXT = "Draw Trim Curve"
     DRAW_STATUS_TEXT = " ".join([
@@ -851,11 +887,13 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
     STATUS_TEXT = " ".join([
         "Cancel: Esc |",
         "Confirm: Ent/Space |",
-        "Select/Move, Extend, Whole: LM, Shift+LM, Shift+Dbl+LM |",
-        "Path/Extrude/Insert/Close: Ctrl+LM |",
+        "Select/Move, Extend: LM, Shift+LM |",
+        "Extrude/Insert/Close: Ctrl+LM |",
         "Delete: Alt+LM |",
-        "Move, Scale, Rotate: RM, Shift+RM, Alt+RM |",
+        "Cycle: Dbl+LM |",
+        "Translate: RM |",
         "All, Invert: A, Alt+A |",
+        "Path: Ctrl+Dbl+LM",
         "Vector/Auto, Toggle: Shift+1/2, Dbl+Alt |",
         "Recalc: Ctrl+R |",
         "Smooth: Shift+Alt+S |",
@@ -867,15 +905,16 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
     target_obj = bpy.props.PointerProperty(type=bpy.types.Object)
     trim_curve = bpy.props.PointerProperty(type=bpy.types.Curve)
 
+    is_init_orthographic = False
+    do_show_gizmo_navigate_back = False
+
     disabled_draw_keymap_items_ids = []
     disabled_pen_keymap_items_ids = []
     has_enabled_back_draw_keymap_items = False
     has_enabled_back_pen_keymap_items = False
 
-    history_steps = 0
     dbl = {}
-
-    is_init_orthographic = False
+    history_steps = 0
     is_draw = True
     is_exterior = False
     has_entered_in_between_tools = False
@@ -905,6 +944,8 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
     def initClassProps(cls, self, context, event):
         self.view_3d_space = getSpaceUnderMouseFromContextEvent(context, event)
         self.is_init_orthographic = self.view_3d_space.region_3d.is_orthographic_side_view
+        self.do_show_gizmo_navigate_back = self.view_3d_space.show_gizmo_navigate
+        self.view_3d_space.show_gizmo_navigate = False
         self.init_workspace = findBpyObjectByName(
             context.window.workspace.name, bpy.data.workspaces)
 
@@ -918,10 +959,10 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
 
     @classmethod
     def mapModalKeys(cls, self, context, doSet):
-        drawKeymap = getKeymapFromContext(
-            context, '3D View Tool: Edit Curve, Draw', 'user')
-        penKeymap = getKeymapFromContext(
-            context, '3D View Tool: Edit Curve, Curve Pen', 'user')
+        drawKeymap = getKeymapInKeyconfigSpace(
+            '3D View Tool: Edit Curve, Draw', 'user')
+        penKeymap = getKeymapInKeyconfigSpace(
+            '3D View Tool: Edit Curve, Curve Pen', 'user')
 
         if doSet:
             self.disableOldModalKeys(self, drawKeymap, penKeymap)
@@ -956,23 +997,23 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
     @classmethod
     def appendNewModalKeys(cls, drawKeymap, penKeymap):
         # Draw
-        addUserKeymapItem(drawKeymap, {'curve.draw': {'wait_for_input': False}},
-                          'LEFTMOUSE')
+        addKeymapItem(drawKeymap, {'curve.draw': {'wait_for_input': False}},
+                      'LEFTMOUSE', space='user')
 
         # Select/Move, Extend
-        addUserKeymapItem(penKeymap, {'curve.pen': {'select_point': True, 'move_point': True, 'move_point': True, 'move_segment': True}},
-                          'LEFTMOUSE')
-        addUserKeymapItem(penKeymap, {'curve.pen': {'extend': True}},
-                          'LEFTMOUSE shift')
+        addKeymapItem(penKeymap, {'curve.pen': {'select_point': True, 'move_point': True, 'move_point': True, 'move_segment': True}},
+                      'LEFTMOUSE', space='user')
+        addKeymapItem(penKeymap, {'curve.pen': {'extend': True}},
+                      'LEFTMOUSE shift', space='user')
         # Extrude, Insert, Close
-        addUserKeymapItem(penKeymap, {'curve.pen': {'extrude_point': True, 'insert_point': True, 'close_spline': True, 'close_spline_method': 1}},
-                          'LEFTMOUSE ctrl')
+        addKeymapItem(penKeymap, {'curve.pen': {'extrude_point': True, 'insert_point': True, 'close_spline': True, 'close_spline_method': 1}},
+                      'LEFTMOUSE ctrl', space='user')
         # Delete
-        addUserKeymapItem(penKeymap, {'curve.pen': {'delete_point': True}},
-                          'LEFTMOUSE alt')
+        addKeymapItem(penKeymap, {'curve.pen': {'delete_point': True}},
+                      'LEFTMOUSE alt', space='user')
         # Toggle Type
-        addUserKeymapItem(penKeymap, {'curve.pen': {'toggle_vector': True, 'cycle_handle_type': True}},
-                          'LEFTMOUSE DOUBLE_CLICK')
+        addKeymapItem(penKeymap, {'curve.pen': {'toggle_vector': True, 'cycle_handle_type': True}},
+                      'LEFTMOUSE DOUBLE_CLICK', space='user')
 
     def modal(self, context, event):
         # PASS_THROUGH - execute modal defined operator and restart loop
@@ -1065,7 +1106,7 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
             elif isPen and eventKeyIs(event, 'LEFTMOUSE alt'):
                 self.history_steps += 1
                 return {'PASS_THROUGH'}
-            # Toggle Type
+            # Cycle Type
             elif isPen and eventKeyIs(event, 'LEFTMOUSE') and 'DBL':
                 if not self.dbl.get('LEFTMOUSE'):
                     self.dbl['LEFTMOUSE'] = addTimerForContext(context)
@@ -1106,17 +1147,9 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                 bpy.ops.curve.dissolve_verts()
                 return {'RUNNING_MODAL'}
 
-            # Move, Scale, Rotate
+            # Transform
             elif isPen and eventKeyIs(event, 'RIGHTMOUSE'):
                 bpy.ops.transform.translate('INVOKE_DEFAULT')
-                self.has_chandes_header_by_submodal = True
-                return {'RUNNING_MODAL'}
-            elif isPen and eventKeyIs(event, 'RIGHTMOUSE shift'):
-                bpy.ops.transform.resize('INVOKE_DEFAULT')
-                self.has_chandes_header_by_submodal = True
-                return {'RUNNING_MODAL'}
-            elif isPen and eventKeyIs(event, 'RIGHTMOUSE alt'):
-                bpy.ops.transform.rotate('INVOKE_DEFAULT')
                 self.has_chandes_header_by_submodal = True
                 return {'RUNNING_MODAL'}
             elif isPen and eventKeyIs(event, 'D'):
@@ -1133,7 +1166,7 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                 return {'RUNNING_MODAL'}
 
             # All, Invert
-            elif isPen and eventKeyIs(event, 'A'):
+            elif isPen and eventKeyIs(event, 'A CLICK'):
                 if getCurveActivePoint(context.active_object):
                     bpy.ops.curve.select_all(action='DESELECT')
                 else:
@@ -1144,19 +1177,7 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                 bpy.ops.curve.select_all(action='INVERT')
                 self.history_steps += 1
                 return {'RUNNING_MODAL'}
-            # Select Whole, Path
-            elif isPen and eventKeyIs(event, 'LEFTMOUSE shift') and 'DBL':
-                if not self.dbl.get('LEFTMOUSE shift'):
-                    self.dbl['LEFTMOUSE shift'] = addTimerForContext(context)
-                    return {'RUNNING_MODAL'}
-                else:
-                    self.dbl['LEFTMOUSE shift'] = removeTimerFromContext(
-                        context, self.dbl.get('LEFTMOUSE shift'))
-
-                actPoint = getCurveActivePoint(context.active_object, True)
-                selectWholeBezierPoint(actPoint)
-                self.history_steps += 1
-                return {'RUNNING_MODAL'}
+            # Select Path
             elif isPen and eventKeyIs(event, 'LEFTMOUSE ctrl') and 'DBL':
                 if not self.dbl.get('LEFTMOUSE ctrl'):
                     self.dbl['LEFTMOUSE ctrl'] = addTimerForContext(context)
@@ -1256,11 +1277,9 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
     @classmethod
     def finish(cls, self, context):
         try:
-            TRIM_CURVE_RESOLUTION = 16
-
             # Close and convert curve to mesh
             setCurveCyclic(self.trim_curve, True)
-            self.trim_curve.data.resolution_u = TRIM_CURVE_RESOLUTION
+            self.trim_curve.data.resolution_u = self.trim_resolution
             bpy.ops.object.mode_set(mode="OBJECT")
             bpy.ops.object.convert(target='MESH')
             bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='MEDIAN')
@@ -1324,11 +1343,12 @@ class SculptTrimCurveModalOperator(bpy.types.Operator):
                 modifier=boolMod.name)
             # Restore context
             setActiveObjectInContext(context, self.trim_curve)
-            # self.trim_curve.display_type = 'WIRE'
             setActiveObjectInContext(
                 context, self.target_obj, mode='SCULPT', delPrev=True)
             setModalTextInContext(context, None)
             self.mapModalKeys(self, context, False)
+            if self.do_show_gizmo_navigate_back:
+                self.view_3d_space.show_gizmo_navigate = True
 
             return {'FINISHED'}
 
@@ -1396,33 +1416,7 @@ def SubscribeWorkSpace(isRegister=True):
         unsubscribeWorkSpace()
 
 
-class SculptSymmetrizeWeldPanelOperator(bpy.types.Operator):
-    bl_label = "Sculpt Symmetrize Weld Panel"
-    bl_idname = "paint.xx_sculpt_symmetrize_weld_panel"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        bpy.ops.wm.call_panel(
-            name=SculptSymmetrizeWeldPanel.bl_idname, keep_open=True)
-        return {'FINISHED'}
-
-
-class SculptSymmetrizeWeldPanel(bpy.types.Panel):
-    bl_space_type = 'TOPBAR'  # requered panel dummy
-    bl_region_type = 'HEADER'  # requered panel dummy
-    bl_label = "Symmetrize Weld"
-    bl_idname = "xx_sculpt_symmetrize_weld_panel"
-
-    def draw(self, context):
-        layout = self.layout
-        sculpt = context.tool_settings.sculpt
-        layout.prop(sculpt, "symmetrize_direction")
-        # When active_default=true, an operator button defined after this will be activated when pressing return
-        layout.active_default = True
-        layout.operator("sculpt.symmetrize")
-
-
-# Sculpt Loose Parts
+# SCULPT LOOSE PARTS
 
 
 class SculptHoveredLoosePartSeparateOperator(bpy.types.Operator):
@@ -1466,7 +1460,8 @@ class SculptHoveredLoosePartSeparateOperator(bpy.types.Operator):
         # Select hovered loose part and separate it
         bpy.ops.object.editmode_toggle()
         bpy.ops.mesh.select_linked(delimit={'NORMAL'})
-        if not len(getSelectedVerticesOfObject(context.active_object)):
+        bm = bmesh.from_edit_mesh(context.active_object.data)
+        if not len(getSelectedVertsOfBMesh(bm)):
             bpy.ops.mesh.reveal(select=True)
             bpy.ops.sculpt.sculptmode_toggle()
             return {'FINISHED'}
@@ -1552,7 +1547,7 @@ class SculptRemeshByLoosePartsOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# / Paint Tools
+# / PAINT
 
 
 class PaintGradientSettingsPanelOperator(bpy.types.Operator):
@@ -1707,10 +1702,10 @@ class PaintMaskImageInvertOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# / Image/Shading Tools (Resources)
+# / IMAGE/SHADING (RESOURCES)
 
 
-# Pack
+# PACK
 
 
 class PackAllSavedOperator(bpy.types.Operator):
@@ -1729,16 +1724,6 @@ class PackAllSavedOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class ImagePackOperator(bpy.types.Operator):
-    bl_label = "Image Pack"
-    bl_idname = "file.xx_image_pack"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        bpy.ops.image.pack()
-        return {'FINISHED'}
-
-
 class ImageUnpackOperator(bpy.types.Operator):
     bl_label = "Image Unpack"
     bl_idname = "file.xx_image_unpack"
@@ -1749,12 +1734,12 @@ class ImageUnpackOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# Create New
+# CREATE NEW
 
 
 class ShadingCreateNewOperator(bpy.types.Operator):
     bl_label = "Shading New"
-    bl_idname = "node.xx_shader_new"
+    bl_idname = "node.xx_shading_create_new"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
@@ -1780,7 +1765,7 @@ class ShadingCreateNewOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# Set Active
+# SET ACTIVE
 
 
 class ImageSetActiveMenuOperator(bpy.types.Operator):
@@ -1811,7 +1796,7 @@ class ImageSetActiveMenu(bpy.types.Menu):
 
 class ShadingSetActiveMenuOperator(bpy.types.Operator):
     bl_label = "Shading Set Active Menu"
-    bl_idname = "node.xx_shader_set_active_menu"
+    bl_idname = "node.xx_shading_set_active_menu"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
@@ -1833,7 +1818,7 @@ class ShadingSetActiveMenuOperator(bpy.types.Operator):
 
 class ShadingSetActiveMenu(bpy.types.Menu):
     bl_label = "Set Active"
-    bl_idname = "xx_shader_set_active_menu"
+    bl_idname = "xx_shading_set_active_menu"
 
     def draw(self, context):
         global glob
@@ -1857,66 +1842,7 @@ class ShadingSetActiveMenu(bpy.types.Menu):
                     lineset, "linestyle", new="scene.freestyle_linestyle_new")
 
 
-# Keep Fake User
-
-
-class ImageKeepFakeUserOperator(bpy.types.Operator):
-    bl_label = "Image Keep Fake User"
-    bl_idname = "image.xx_image_keep_fake_user"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    event = {}
-
-    def invoke(self, context, event):
-        self.event = yield_global_event(event)
-        return self.execute(context)
-
-    def execute(self, context):
-        space = getSpaceUnderMouseFromContextEvent(context, self.event)
-        if space.image:
-            space.image.use_fake_user = True if not space.image.use_fake_user else False
-            # Refresh/update ui header
-            bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-        return {'FINISHED'}
-
-
-class ShadingKeepFakeUserOperator(bpy.types.Operator):
-    bl_label = "Shading Keep Fake User"
-    bl_idname = "node.xx_shader_keep_fake_user"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    @classmethod
-    def poll(cls, context):
-        try:
-            isShading = context.space_data.tree_type == 'ShaderNodeTree'
-        except Exception as er:
-            isShading = None
-        return isShading
-
-    def execute(self, context):
-        snode = context.space_data
-
-        if snode.shader_type == 'OBJECT':
-            mat = context.active_object.active_material
-            if mat:
-                mat.use_fake_user = True if not mat.use_fake_user else False
-        elif snode.shader_type == 'WORLD':
-            world = context.scene.world
-            if world:
-                world.use_fake_user = True if not world.use_fake_user else False
-        elif snode.shader_type == 'LINESTYLE':
-            lineset = context.view_layer.freestyle_settings.linesets.active
-            if lineset:
-                linestyle = lineset.linestyle
-                linestyle.use_fake_user = True if not linestyle.use_fake_user else False
-
-        # Refresh/update ui header
-        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-
-        return {'FINISHED'}
-
-
-# Make Single Copy
+# MAKE SINGLE (CLONE)
 
 
 class ImageMakeSingleCopyOperator(bpy.types.Operator):
@@ -1959,7 +1885,66 @@ class MaterialMakeSingleCopyOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# Close
+# FAKE USER (KEEP)
+
+
+class ImageKeepFakeUserOperator(bpy.types.Operator):
+    bl_label = "Image Keep Fake User"
+    bl_idname = "image.xx_image_keep_fake_user"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    event = {}
+
+    def invoke(self, context, event):
+        self.event = yield_global_event(event)
+        return self.execute(context)
+
+    def execute(self, context):
+        space = getSpaceUnderMouseFromContextEvent(context, self.event)
+        if space.image:
+            space.image.use_fake_user = True if not space.image.use_fake_user else False
+            # Refresh/update ui header
+            bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+        return {'FINISHED'}
+
+
+class ShadingKeepFakeUserOperator(bpy.types.Operator):
+    bl_label = "Shading Keep Fake User"
+    bl_idname = "node.xx_shading_keep_fake_user"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        try:
+            isShading = context.space_data.tree_type == 'ShaderNodeTree'
+        except Exception as er:
+            isShading = None
+        return isShading
+
+    def execute(self, context):
+        snode = context.space_data
+
+        if snode.shader_type == 'OBJECT':
+            mat = context.active_object.active_material
+            if mat:
+                mat.use_fake_user = True if not mat.use_fake_user else False
+        elif snode.shader_type == 'WORLD':
+            world = context.scene.world
+            if world:
+                world.use_fake_user = True if not world.use_fake_user else False
+        elif snode.shader_type == 'LINESTYLE':
+            lineset = context.view_layer.freestyle_settings.linesets.active
+            if lineset:
+                linestyle = lineset.linestyle
+                linestyle.use_fake_user = True if not linestyle.use_fake_user else False
+
+        # Refresh/update ui header
+        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+
+        return {'FINISHED'}
+
+
+# CLOSE
 
 
 class ImageCloseOperator(bpy.types.Operator):
@@ -1981,7 +1966,7 @@ class ImageCloseOperator(bpy.types.Operator):
 
 class ShadingCloseOperator(bpy.types.Operator):
     bl_label = "Shading Close"
-    bl_idname = "node.xx_shader_close"
+    bl_idname = "node.xx_shading_close"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
@@ -2001,7 +1986,7 @@ class ShadingCloseOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# Remove
+# REMOVE
 
 
 class ImageRemoveOperator(bpy.types.Operator):
@@ -2058,7 +2043,7 @@ class ImageRemoveConfirmMenuOperator(bpy.types.Operator):
 
 class ShadingRemoveOperator(bpy.types.Operator):
     bl_label = "Shading Remove"
-    bl_idname = "node.xx_shader_remove"
+    bl_idname = "node.xx_shading_remove"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -2068,7 +2053,7 @@ class ShadingRemoveOperator(bpy.types.Operator):
 
 class ShadingRemoveConfirmMenu(bpy.types.Menu):
     bl_label = "OK?"
-    bl_idname = "xx_shader_remove_confirm_menu"
+    bl_idname = "xx_shading_remove_confirm_menu"
 
     @classmethod
     def poll(cls, context):
@@ -2093,7 +2078,7 @@ class ShadingRemoveConfirmMenu(bpy.types.Menu):
 
 class ShadingRemoveConfirmMenuOperator(bpy.types.Operator):
     bl_label = "Shading Remove"
-    bl_idname = "node.xx_shader_remove_confirm_menu"
+    bl_idname = "node.xx_shading_remove_confirm_menu"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):

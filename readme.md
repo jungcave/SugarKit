@@ -2,34 +2,25 @@
 
 ## EN
 
-Sugar Kit is a collection of tools for 3d-artists that adds various features, aimed to simplify Blender workflow.
+Sugar Kit is a collection of tools for 3d-artists that adds various features,
+aimed to make Blender workflow easier.
 
 ## SugarKit
 
 v3.1 features tools:
-- Object Viewport Color Set
-- Object Viewport Alpha Toggle
-- Object Modifier Setups: Axis Bend, Radial Array
-- Mesh Quad Fill
-- Vertex Group Rename Active
-- Vertex Group Select Active (in Sculpt, Paint)
-- Vertex Group Active To Sculpt Face Set
-- Vertex Group Active To Paint Mask
-- Curve Select Whole Handle
-- Curve Toggle Depth
-- Curve Toggle Fill Caps
+
+- Object Viewport Display Color & Alpha
+- Object Modifier Setups: Bend, Radial Array
+- Mesh Quad Fill & Select Along Non-Mainfold
+- Vertex Groups: Rename Active, To Sculpt Face Set, To Paint Select Mask
+- Curve Data Props: Extrude, Bevel Mode, Depth Set/Toggle, Fill Caps
 - Curve Select Endpoints
 - Sculpt Draw Curve
 - Sculpt Trim Curve
-- Sculpt Symmetrize Weld
 - Sculpt Loose Parts: Separate, Join, Remesh
-- Paint Gradient Settings
+- Paint Gradient Panel
 - Paint Color Palette
 - Paint Mask Invert
-- Image/All Pack, Image Unpack
-- Image/Shading Create New
-- Image/Shading Set Active
-- Image/Shading Keep Fake User
-- Image/Shading Make Single Copy
-- Image/Shading Close
-- Image/Shading Remove
+- Image Pack All/Active, Unpack
+- Shading Create New
+- Image/Shading Set Active, Fake User, Make Single, Close, Remove

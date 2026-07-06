@@ -23,7 +23,7 @@ class AddonPreferences(bpy.types.AddonPreferences):
 
         col = layout.column(align=True)
         col.operator(BuildSugarKeyconfigOperator.bl_idname,
-                     text="Rebuild Sugar Keyconfig")
+                     text="Rebuild Sugar Hotkeys")
 
 
 def register():

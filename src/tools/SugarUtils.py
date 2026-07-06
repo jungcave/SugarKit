@@ -15,7 +15,7 @@ import inspect
 # / Use SimpleNamespace() istead of dict {object} to get key's value by dot syntax
 
 
-# / Log Utils
+# / LOG
 
 
 def C(*args):
@@ -48,7 +48,7 @@ def CL(bpy_col, inDetail=False, nameContains=''):
     C()
 
 
-# / Classes Utils
+# / PRIMITIVE/CLASSES
 
 def getClassesFromFileModule(module):
     classes = [
@@ -56,9 +56,6 @@ def getClassesFromFileModule(module):
         if obj.__module__ == module.__name__
     ]
     return classes
-
-
-# / Primitives Utils
 
 
 def toSimpleNameSpace(bpy_dict):
@@ -83,52 +80,156 @@ def getKeyByValueInDict(d, v):
             return key
 
 
-# / Keymap Utils
+# / KEYCONFIG BUILDER
 
 
-addonKeymaps = []
-
-
-def addAddonKeymapItem(
-    keymapName,
-    operatorData,
-    hotkey,
-    setKmiProps=None,
-    disableOld=False,
-    disableOldExactProps=None,
-):
+def restoreDefaultKeymaps():
     wmkcs = bpy.context.window_manager.keyconfigs
-    km, kmi = newKeymapItem(
-        keyconfig=wmkcs.addon,
-        keymapName=keymapName,
-        operatorData=operatorData,
-        keybind=parseKeybindFromHotkeyString(hotkey),
-        setKmiProps=setKmiProps,
-        disableOld=parseKeybindFromHotkeyString(disableOld),
-        disableOldExactProps=parseKeybindFromHotkeyString(
-            disableOldExactProps),
-    )
-    addonKeymaps.append((km, kmi))
+    # Restore keymaps to default to avoid future collision bugs
+    for dkm in wmkcs.default.keymaps:
+        dkm.restore_to_default()
 
 
-def removeAddonKeymapItems():
-    for km, kmi in addonKeymaps:
+def buildNewActiveKeyconfig(name):
+    wmkcs = bpy.context.window_manager.keyconfigs
+    # Get old keyconfig
+    try:
+        kc = wmkcs[name.replace(" ", "_")]
+    except Exception as er:
+        kc = None
+    # Remove old keyconfig if exists
+    if kc:
+        wmkcs.active = kc
+        bpy.ops.wm.keyconfig_preset_add(remove_active=True)
+    # Create new keyconfig
+    bpy.ops.wm.keyconfig_preset_add(name=name)  # and set active
+    kc = wmkcs.active
+    # Copy all keymaps and keymap items from default keyconfig
+    for dkm in wmkcs.default.keymaps:
+        km = kc.keymaps.new(
+            name=dkm.name,
+            space_type=dkm.space_type,
+            region_type=dkm.region_type,
+            modal=dkm.is_modal
+        )
+        for kmi in dkm.keymap_items:
+            km.keymap_items.new_from_item(kmi)
+    return kc
+
+
+MODIFIERS_AS_STRINGS = {'shift': '⇧', 'ctrl': '⌃', 'alt': '⌥', 'cmd': '⌘'}
+KEYMAPS_NOT_TO_DISABLE = ['Generic Gizmo', 'Generic Gizmo Maybe Drag', 'Generic Gizmo Drag',
+                          'Generic Gizmo Click Drag', 'Generic Gizmo Select', '3D View Tool: Object, Add Primitive']
+
+
+def isValueInKmi(kmi, val):
+    if not kmi:
+        return False
+    elif val in MODIFIERS_AS_STRINGS.values() and not kmi.any:
+        modKey = getKeyByValueInDict(MODIFIERS_AS_STRINGS, val)
+        return getattr(kmi, 'oskey' if modKey == 'cmd' else modKey)
+    else:
+        return kmi.type.startswith(val.upper()) and kmi.type != 'ANY'
+
+
+def disableIncludingHotkeysInKeyconfig(
+    keyconfig,
+    disableIncluding=[],
+    excludes=[]
+):
+    includingAsStrings = []
+    excludesAsStrings = []
+
+    for key in disableIncluding:
+        if key in MODIFIERS_AS_STRINGS:
+            includingAsStrings.append(MODIFIERS_AS_STRINGS[key])
+        else:
+            includingAsStrings.append(key)
+
+    for hotkey in excludes:
+        for k, v in MODIFIERS_AS_STRINGS.items():
+            hotkey = hotkey.replace(k, v)
+        excludesAsStrings.append(hotkey)
+
+    if keyconfig and keyconfig.keymaps:
+        for km in keyconfig.keymaps:
+            if km.keymap_items and km.name not in KEYMAPS_NOT_TO_DISABLE:
+                for kmi in km.keymap_items:
+                    if kmi.active and kmi.map_type in ['KEYBOARD', 'MOUSE', 'NDOF']:
+                        kmiString = kmi.to_string()
+                        for val in includingAsStrings:
+                            if (
+                                kmiString not in excludesAsStrings and
+                                isValueInKmi(kmi, val) and val in kmiString and
+                                hasattr(kmi, 'idname') and kmi.idname
+                            ):
+                                kmi.active = False
+
+
+def clearAllInactiveKeymapItemsInKeyconfig(keyconfig):
+    if keyconfig and keyconfig.keymaps:
+        for km in keyconfig.keymaps:
+            if km and km.keymap_items:
+                for kmi in list(km.keymap_items):
+                    if not kmi.active:
+                        km.keymap_items.remove(kmi)
+
+
+def saveAndExportKeyconfig(filename):
+    bpy.ops.wm.save_userpref()
+    path = bpy.utils.user_resource('SCRIPTS', path="presets")
+    filepath = bpy.path.native_pathsep(path + '/keyconfig/' + filename)
+    bpy.ops.preferences.keyconfig_export(filepath=filepath, all=True)
+
+
+def clearAndSaveKeyconfig(keyconfig, filename):
+    clearAllInactiveKeymapItemsInKeyconfig(keyconfig)
+    saveAndExportKeyconfig(filename)
+
+
+# / KEYMAPS
+
+
+addonKeymapItems = []
+
+
+def clearAddonKeymapItems():
+    for km, kmi in addonKeymapItems:
         km.keymap_items.remove(kmi)
-    addonKeymaps.clear()
+    addonKeymapItems.clear()
 
 
-def addActiveKeymapItem(
+def getKeyconfigSpace(space='active'):
+    wmkcs = bpy.context.window_manager.keyconfigs
+    if space == "active":
+        return wmkcs.active
+    elif space == "user":
+        return wmkcs.user  # == wmkcs['Blender user'].keymaps[name] \
+    elif space == 'addon':
+        return wmkcs.addon  # == wmkcs['Blender addon'].keymaps[name] \
+    elif space == 'default':
+        return wmkcs.default  # == wmkcs['Blender'].keymaps[name] \
+    else:
+        return None
+
+
+def getKeymapInKeyconfigSpace(name, space='active'):
+    kc = getKeyconfigSpace(space)
+    return None if not kc else kc.keymaps[name]
+
+
+def addKeymapItem(
     keymapName,
     operatorData,
     hotkey,
     setKmiProps=None,
     disableOld=False,
     disableOldExactProps=None,
-    head=False
+    head=False,
+    space='active'
 ):
-    wmkcs = bpy.context.window_manager.keyconfigs
-    newKeymapItem(
-        keyconfig=wmkcs.active,
+    km, kmi = newKeymapItem(
+        keyconfig=getKeyconfigSpace(space),
         keymapName=keymapName,
         operatorData=operatorData,
         keybind=parseKeybindFromHotkeyString(hotkey),
@@ -138,39 +239,21 @@ def addActiveKeymapItem(
             disableOldExactProps),
         head=head
     )
+    if space == 'addon':
+        addonKeymapItems.append((km, kmi))
 
 
-def disableActiveKeymapItem(
+def disableKeymapItem(
     keymapName,
     operatorData,
-    hotkey=None
+    hotkey=None,
+    space='active'
 ):
-    wmkcs = bpy.context.window_manager.keyconfigs
-    disableKeymapItem(
-        wmkcs.active,
+    deactivateKeymapItem(
+        getKeyconfigSpace(space),
         keymapName,
         operatorData,
         parseKeybindFromHotkeyString(hotkey)
-    )
-
-
-def addUserKeymapItem(
-    keymap,  # 'name' | obj
-    operatorData,
-    hotkey,
-    setKmiProps=None,
-    disableOld=False,
-    disableOldExactProps=None
-):
-    wmkcs = bpy.context.window_manager.keyconfigs
-    newKeymapItem(
-        keyconfig=wmkcs.user,
-        keymapName=keymap,
-        operatorData=operatorData,
-        keybind=parseKeybindFromHotkeyString(hotkey),
-        setKmiProps=setKmiProps,
-        disableOld=parseKeybindFromHotkeyString(disableOld),
-        disableOldExactProps=parseKeybindFromHotkeyString(disableOldExactProps)
     )
 
 
@@ -180,19 +263,20 @@ def editUserKeymapItem(
     hotkey,
     oldHotkey=None,
     oldHotkeyExactProps=None,
+    space='user'
 ):
-    wmkcs = bpy.context.window_manager.keyconfigs
+    km = getKeymapInKeyconfigSpace(keymapName, space)
+    kc = getKeyconfigSpace(space)
     idName, properties = parseOperatorData(operatorData)
 
     if oldHotkey == None:
-        kmi = wmkcs.user.keymaps[keymapName].keymap_items.find_from_operator(
-            idName)
+        kmi = km.keymap_items.find_from_operator(idName)
     elif type(oldHotkey) is str or type(oldHotkey) is dict:
         kmi = findKeymapItem(
-            wmkcs.user, keymapName, idName, parseKeybindFromHotkeyString(oldHotkey))
+            kc, keymapName, idName, parseKeybindFromHotkeyString(oldHotkey))
     elif oldHotkeyExactProps != None:
         kmi = findKeymapItem(
-            wmkcs.user, keymapName, operatorData, parseKeybindFromHotkeyString(oldHotkey))
+            kc, keymapName, operatorData, parseKeybindFromHotkeyString(oldHotkey))
 
     editKeymapItemHotkey(kmi, parseKeybindFromHotkeyString(hotkey))
 
@@ -283,14 +367,14 @@ def newKeymapItem(
         if kmi:
             kmi.active = False
     elif type(disableOld) is str or type(disableOld) is dict:
-        disableKeymapItem(
+        deactivateKeymapItem(
             keyconfig,
             kmName,
             idName,
             keybind=disableOld,
         )
     elif disableOldExactProps != None:
-        disableKeymapItem(
+        deactivateKeymapItem(
             keyconfig,
             kmName,
             operatorData,
@@ -339,7 +423,7 @@ def newKeymapItem(
     return (km, kmi)
 
 
-def disableKeymapItem(
+def deactivateKeymapItem(
     keyconfig,
     keymapName,  # '*' - in all keymaps
     operatorData,  # '*' - with any id | '*...' - with any id including ... | \
@@ -356,11 +440,13 @@ def disableKeymapItem(
         if km and km.keymap_items:
             for kmi in km.keymap_items:
                 if compareKeymapItem(kmi, operatorData, keybind, isModal=km.is_modal, log=log):
+
                     kmi.active = False
     else:  # Compare in all keymaps \
         for km in keyconfig.keymaps:
             for kmi in km.keymap_items:
                 if compareKeymapItem(kmi, operatorData, keybind, isModal=km.is_modal, log=log):
+
                     kmi.active = False
 
 
@@ -477,131 +563,7 @@ def editKeymapItemHotkey(kmi, keybind):
     kmi.repeat = repeat if repeat != None else kmi.repeat
 
 
-# Keyconf builder
-
-
-def restoreDefaultKeymaps():
-    wmkcs = bpy.context.window_manager.keyconfigs
-    # Restore keymaps to default to avoid future collision bugs
-    for dkm in wmkcs.default.keymaps:
-        dkm.restore_to_default()
-
-
-def buildNewActiveKeyconfig(name):
-    wmkcs = bpy.context.window_manager.keyconfigs
-    # Get old keyconfig
-    try:
-        kc = wmkcs[name.replace(" ", "_")]
-    except Exception as er:
-        kc = None
-    # Remove old keyconfig if exists
-    if kc:
-        wmkcs.active = kc
-        bpy.ops.wm.keyconfig_preset_add(remove_active=True)
-    # Create new keyconfig
-    bpy.ops.wm.keyconfig_preset_add(name=name)  # and set active
-    kc = wmkcs.active
-    # Copy all keymaps and keymap items from default keyconfig
-    for dkm in wmkcs.default.keymaps:
-        km = kc.keymaps.new(
-            name=dkm.name,
-            space_type=dkm.space_type,
-            region_type=dkm.region_type,
-            modal=dkm.is_modal
-        )
-        for kmi in dkm.keymap_items:
-            km.keymap_items.new_from_item(kmi)
-    return kc
-
-
-MODIFIERS_AS_STRINGS = {'shift': '⇧', 'ctrl': '⌃', 'alt': '⌥', 'cmd': '⌘'}
-KEYMAPS_NOT_TO_DISABLE = ['Generic Gizmo', 'Generic Gizmo Maybe Drag', 'Generic Gizmo Drag',
-                          'Generic Gizmo Click Drag', 'Generic Gizmo Select', '3D View Tool: Object, Add Primitive']
-
-
-def isValueInKmi(kmi, val):
-    if not kmi:
-        return False
-    elif val in MODIFIERS_AS_STRINGS.values() and not kmi.any:
-        modKey = getKeyByValueInDict(MODIFIERS_AS_STRINGS, val)
-        return getattr(kmi, 'oskey' if modKey == 'cmd' else modKey)
-    else:
-        return kmi.type.startswith(val.upper()) and kmi.type != 'ANY'
-
-
-def disableIncludingHotkeysInKeyconfig(
-    keyconfig,
-    disableIncluding=[],
-    excludes=[]
-):
-    includingAsStrings = []
-    excludesAsStrings = []
-
-    for key in disableIncluding:
-        if key in MODIFIERS_AS_STRINGS:
-            includingAsStrings.append(MODIFIERS_AS_STRINGS[key])
-        else:
-            includingAsStrings.append(key)
-
-    for hotkey in excludes:
-        for k, v in MODIFIERS_AS_STRINGS.items():
-            hotkey = hotkey.replace(k, v)
-        excludesAsStrings.append(hotkey)
-
-    if keyconfig and keyconfig.keymaps:
-        for km in keyconfig.keymaps:
-            if km.keymap_items and km.name not in KEYMAPS_NOT_TO_DISABLE:
-                for kmi in km.keymap_items:
-                    if kmi.active and kmi.map_type in ['KEYBOARD', 'MOUSE', 'NDOF']:
-                        kmiString = kmi.to_string()
-                        for val in includingAsStrings:
-                            if (
-                                kmiString not in excludesAsStrings and
-                                isValueInKmi(kmi, val) and val in kmiString and
-                                hasattr(kmi, 'idname') and kmi.idname
-                            ):
-                                kmi.active = False
-
-
-def clearAllInactiveKeymapItemsInKeyconfig(keyconfig):
-    if keyconfig and keyconfig.keymaps:
-        for km in keyconfig.keymaps:
-            if km and km.keymap_items:
-                for kmi in list(km.keymap_items):
-                    if not kmi.active:
-                        km.keymap_items.remove(kmi)
-
-
-def saveAndExportKeyconfig(filename):
-    bpy.ops.wm.save_userpref()
-    path = bpy.utils.user_resource('SCRIPTS', path="presets")
-    filepath = bpy.path.native_pathsep(path + '/keyconfig/' + filename)
-    bpy.ops.preferences.keyconfig_export(filepath=filepath, all=True)
-
-
-def clearAndSaveKeyconfig(keyconfig, filename):
-    clearAllInactiveKeymapItemsInKeyconfig(keyconfig)
-    saveAndExportKeyconfig(filename)
-
-
-# Trim curve modal
-
-
-def getKeymapFromContext(context, name, keyconfigName="active"):
-    wmkcs = context.window_manager.keyconfigs
-    if keyconfigName == "active":
-        return wmkcs.active.keymaps[name]
-    elif keyconfigName == "user":
-        return wmkcs.user.keymaps[name]  # == wmkcs['Blender user'].keymaps[name] \
-    elif keyconfigName == 'addon':
-        return wmkcs.addon.keymaps[name]  # == wmkcs['Blender addon'].keymaps[name] \
-    elif keyconfigName == 'default':
-        return wmkcs.default.keymaps[name]  # == wmkcs['Blender'].keymaps[name] \
-    else:
-        try:
-            return wmkcs[keyconfigName].keymaps[name]
-        except Exception as er:
-            return None
+# MODAL KEYMAPS
 
 
 def disableActiveKeymapItems(keymap):
@@ -629,7 +591,7 @@ def unableDisabledKeymapItems(keymap, disabledKeymapItemsIds):
         disabledKeymapItemsIds.clear()
 
 
-# / Modal/event Utils
+# / MODAL & EVENT
 
 
 def eventKeyIs(event, hotkey):
@@ -657,7 +619,7 @@ def removeTimerFromContext(context, timer):
         timer) and None if timer else None
 
 
-# / Area Utils
+# / AREA
 
 
 def getSpaceUnderMouseFromContextEvent(context, event):
@@ -673,12 +635,7 @@ def isAreaUnderMousePointer(area, x, y):
     return inX and inY
 
 
-# / Tool Utils
-
-
-def isToolSelect(tool):
-    return tool in [
-        'builtin.select', 'builtin.select_box', 'builtin.select_circle', 'builtin.select_lasso']
+# / TOOL
 
 
 def setActiveToolInContext(tool=""):
@@ -687,54 +644,7 @@ def setActiveToolInContext(tool=""):
         bpy.ops.wm.tool_set_by_id(name=toolName)
 
 
-# Brush
-
-
-def getActiveBrushTextureInContext(context):
-    try:
-        if context.mode == 'SCULPT':
-            return context.tool_settings.sculpt.brush.texture
-        elif context.mode == 'PAINT_VERTEX':
-            return context.tool_settings.vertex_paint.brush.texture
-        elif context.mode == 'PAINT_WEIGHT':
-            return context.tool_settings.weight_paint.brush.texture
-        elif context.mode == 'PAINT_TEXTURE':
-            return context.tool_settings.image_paint.brush.texture
-    except Exception as er:
-        return None
-
-
-def setActiveBrushTextureImageInContext(context, image):
-    try:
-        if context.mode == 'SCULPT':
-            context.tool_settings.sculpt.brush.texture.image = image
-        elif context.mode == 'PAINT_VERTEX':
-            context.tool_settings.vertex_paint.brush.texture.image = image
-        elif context.mode == 'PAINT_WEIGHT':
-            context.tool_settings.weight_paint.brush.texture.image = image
-        elif context.mode == 'PAINT_TEXTURE':
-            context.tool_settings.image_paint.brush.texture.image = image
-    except Exception as er:
-        pass
-
-
-def getActiveBrushMaskTextureInContext(context):
-    try:
-        if context.mode == 'PAINT_TEXTURE':
-            return context.tool_settings.image_paint.brush.mask_texture
-    except Exception as er:
-        return None
-
-
-def setActiveBrushMaskTextureImageInContext(context, image):
-    try:
-        if context.mode == 'PAINT_TEXTURE':
-            context.tool_settings.image_paint.brush.mask_texture.image = image
-    except Exception as er:
-        pass
-
-
-# / Object Utils
+# / OBJECT
 
 
 def findBpyObjectByName(name, col=None):
@@ -767,72 +677,10 @@ def moveObjectToCollection(obj, newCol):
         newCol.objects.link(obj)  # link new
 
 
-# Material/color
-
-
-def appendNewActMatToObject(obj, diffuseColor=(1.0, 1.0, 1.0, 1.0), matSlot=None):
-    newMat = bpy.data.materials.new("Material")
-    newMat.diffuse_color = diffuseColor
-    if not matSlot:
-        obj.data.materials.append(newMat)
-    else:
-        matSlot.material = newMat
-    obj.active_material = newMat
-    return newMat
-
-
-def ensureActMatForActObjectInContext(context):
-    actObj = context.active_object
-    actObjActMat = actObj.active_material
-    actObjActMatIdx = actObj.active_material_index
-    noMatSlots = not actObj.material_slots or not len(
-        actObj.material_slots)
-
-    if not actObjActMat:
-        if noMatSlots:
-            actObjActMat = appendNewActMatToObject(actObj)
-        elif not actObj.material_slots[actObjActMatIdx].material:
-            actObjActMat = appendNewActMatToObject(
-                actObj, matSlot=actObj.material_slots[actObjActMatIdx])
-
-
-def getObjectUsersOfMat(mat, col):
-    # From https://blender.stackexchange.com/a/19021/179841
-    users = []
-    for obj in col:
-        if isinstance(obj.data, bpy.types.Mesh) and mat.name in obj.data.materials:
-            users.append(obj)
-    return users
-
-
-def appendNewColorAttrForObject(obj, name):
-    if obj and obj.data:
-        obj.data.color_attributes.new(
-            name=name, type='BYTE_COLOR', domain='CORNER')
-
-
-# Transformation
-
-
 def applyObjectTransformsWithContext(context, obj, transforms=['location', 'rotation', 'scale']):
     with context.temp_override(selected_editable_objects=[obj]):
         bpy.ops.object.transform_apply(
             location='location' in transforms, rotation='rotation' in transforms, scale='scale' in transforms)
-
-
-# Active/selected
-
-
-def getOutlinerActivatedObjectsFromContext(context):
-    selected_ids = context.selected_ids
-    return [sel for sel in selected_ids if sel.rna_type.name != 'Collection']
-
-
-def selectUnhideAllInGroup(group):
-    for obj in bpy.data.objects:
-        if obj.users_collection == group:
-            obj.hide_set(False)
-            obj.select_set(True)
 
 
 def getObjectModeFromContext(context):
@@ -932,34 +780,102 @@ def selectFaceUnderMouseFromContextEvent(context, event, onlyVisible=True):
     return True
 
 
-# Mesh
+# MATERIAL/COLOR
 
 
-def getSelectedVerticesOfObject(obj):
-    bpy.ops.object.editmode_toggle()  # for data update
-    bpy.ops.object.editmode_toggle()  # for data update
-    return list(filter(lambda v: v.select, obj.data.vertices))
+def appendNewActMatToObject(obj, diffuseColor=(1.0, 1.0, 1.0, 1.0), matSlot=None):
+    newMat = bpy.data.materials.new("Material")
+    newMat.diffuse_color = diffuseColor
+    if not matSlot:
+        obj.data.materials.append(newMat)
+    else:
+        matSlot.material = newMat
+    obj.active_material = newMat
+    return newMat
 
 
-def getMeshFromObject(obj):
-    return bmesh.from_edit_mesh(obj.data)
+def ensureActMatForActObjectInContext(context):
+    actObj = context.active_object
+    actObjActMat = actObj.active_material
+    actObjActMatIdx = actObj.active_material_index
+    noMatSlots = not actObj.material_slots or not len(
+        actObj.material_slots)
+
+    if not actObjActMat:
+        if noMatSlots:
+            actObjActMat = appendNewActMatToObject(actObj)
+        elif not actObj.material_slots[actObjActMatIdx].material:
+            actObjActMat = appendNewActMatToObject(
+                actObj, matSlot=actObj.material_slots[actObjActMatIdx])
 
 
-def getSelectedFacesOfMesh(mesh):
+def getObjectUsersOfMat(mat, col):
+    # From https://blender.stackexchange.com/a/19021/179841
+    users = []
+    for obj in col:
+        if isinstance(obj.data, bpy.types.Mesh) and mat.name in obj.data.materials:
+            users.append(obj)
+    return users
+
+
+def appendNewColorAttrForObject(obj, name):
+    if obj and obj.data:
+        obj.data.color_attributes.new(
+            name=name, type='BYTE_COLOR', domain='CORNER')
+
+
+# MODIFIERS
+
+
+def moveObjectModifierAtTheEnd(obj, mod):
+    modIdx = -1
+    if obj.modifiers:
+        for i, m in enumerate(obj.modifiers):
+            if m.name == mod.name:
+                modIdx = i
+    if modIdx == -1 or modIdx == len(obj.modifiers) - 1:
+        return
+    obj.modifiers.move(modIdx, len(obj.modifiers) - 1)
+
+
+# / MESH (bmesh)
+
+
+def getSelectedVertsOfBMesh(bm):
+    return list(filter(lambda v: v.select, bm.verts))
+
+
+def getSelectedFacesOfBMesh(bm):
     selectedFaces = []
-    for face in mesh.faces:
+    for face in bm.faces:
         if face.select:
             selectedFaces.append(face)
     return selectedFaces
 
 
 def areAllFacesSelectedInObject(obj):
-    mesh = getMeshFromObject(obj)
-    selectedFaces = getSelectedFacesOfMesh(mesh)
-    return len(selectedFaces) == len(mesh.faces)
+    bm = bmesh.from_edit_mesh(obj.data)
+    selectedFaces = getSelectedFacesOfBMesh(bm)
+    return len(selectedFaces) == len(bm.faces)
 
 
-# Curve
+def isNoneFasesSelectedInObject(obj):
+    bm = bmesh.from_edit_mesh(obj.data)
+    selectedFaces = getSelectedFacesOfBMesh(bm)
+    return len(selectedFaces) == 0
+
+
+# Must be defined externally from class where its is called
+def deadBMeshDeselectAllExceptActiveInMesh(mesh):
+    bm = bmesh.from_edit_mesh(mesh)
+    act = bm.select_history.active
+    bpy.ops.mesh.select_all(action='DESELECT')
+    if act:
+        act.select_set(True)
+        bm.select_history.add(act)
+
+
+# CURVE
 
 
 def createCurveAndEditInContext(context, name="Curve", inFront=False, tool='draw'):
@@ -993,13 +909,6 @@ def getCurveActivePoint(curve, returnIfActiveLeftOrRight=False):
     return None
 
 
-def selectWholeBezierPoint(point, select=True):
-    if point:
-        point.select_control_point = select
-        point.select_left_handle = select
-        point.select_right_handle = select
-
-
 def setCurveCyclic(curve, doCycle):
     for s in curve.data.splines:
         s.use_cyclic_u = doCycle
@@ -1009,21 +918,7 @@ def isCurveMainSplineClosed(curve):
     return curve.data.splines[0].use_cyclic_u
 
 
-# Modifiers
-
-
-def moveObjectModifierAtTheEnd(obj, mod):
-    modIdx = -1
-    if obj.modifiers:
-        for i, m in enumerate(obj.modifiers):
-            if m.name == mod.name:
-                modIdx = i
-    if modIdx == -1 or modIdx == len(obj.modifiers) - 1:
-        return
-    obj.modifiers.move(modIdx, len(obj.modifiers) - 1)
-
-
-# / UV Utils
+# / UV
 
 
 def createUvTransformer(angle, origin=(0, 0), offset=(0, 0), scale=(1, 1)):
